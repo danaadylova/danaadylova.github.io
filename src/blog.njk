@@ -5,7 +5,7 @@ permalink: /blog/
 eleventyExcludeFromCollections: true
 ---
 <h1 data-typed>blog</h1>
-<p>Notes, experiments, and things I figured out the hard way.</p>
+<p>Notes, experiments, and things I figured out along the way.</p>
 <ul class="post-list">
 {% for post in collections.post | reverse %}
   <li><span class="date">{{ post.date | gdate }}</span> <a href="{{ post.url }}">{{ post.data.title }}</a></li>
