@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  {% if page.url == "/" %}
+  <title>Dana Adylova — developer &amp; crafter</title>
+  {% else %}
+  <title>{{ title }} · dana adylova</title>
+  {% endif %}
+  <meta name="description" content="{{ description or 'Dana Adylova — developer and crafter in the Bay Area. Notes from somewhere between code and yarn.' }}" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%B6%3C/text%3E%3C/svg%3E" />
+  <link rel="alternate" type="application/atom+xml" title="dana adylova — notes" href="/feed.xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/garden.css" />
+  <script>document.documentElement.className += " js";</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="prompt" href="/">~/dana <span class="dollar">$</span></a>
+    <nav class="folders" aria-label="Site">
+      <a href="/blog/" {% if '/blog' in page.url %}class="here"{% endif %}>/blog</a>
+      <a href="/projects/" {% if '/projects' in page.url %}class="here"{% endif %}>/projects</a>
+      <a href="/resume/" {% if '/resume' in page.url %}class="here"{% endif %}>/resume</a>
+      <a href="/now/" {% if '/now' in page.url %}class="here"{% endif %}>/now</a>
+    </nav>
+  </header>
+  <main>
+{{ content | wikilinks | safe }}
+  </main>
+  <footer class="site-footer">
+    <span>
+      <a href="https://github.com/danaadylova">github</a> ·
+      <a href="mailto:danaadylova@gmail.com">email</a> ·
+      <a href="/feed.xml">rss</a>
+    </span>
+    <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">sound: on</button>
+  </footer>
+  <script src="/js/garden.js"></script>
+</body>
+</html>

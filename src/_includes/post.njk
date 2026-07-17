@@ -1,0 +1,15 @@
+---
+layout: base.njk
+---
+<article class="note">
+  <p class="note-meta">Entry · {{ page.date | gdate }}</p>
+  <h1>{{ title }}</h1>
+  {{ content | safe }}
+  {% if backlinks and backlinks.length %}
+  <p class="backlinks">backlinks:
+    {%- for b in backlinks %}
+    <a class="wikilink" href="{{ b.url }}">{{ b.title }}</a>
+    {%- endfor %}
+  </p>
+  {% endif %}
+</article>
