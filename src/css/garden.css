@@ -131,7 +131,9 @@ pre code { border: none; background: none; padding: 0; }
 
 .typed-line { font-family: var(--mono); font-size: 1.3rem; color: var(--ink); margin: 0.5rem 0 0.25rem; min-height: 1.8em; }
 .typed-line .tilde { color: var(--teal-bright); }
-#typed::after { content: '▊'; color: var(--terra); animation: blink 1.1s steps(1) infinite; }
+[data-typed].typing::after, #typed.typing::after { content: '▊'; color: var(--terra); animation: blink 1.1s steps(1) infinite; }
+body.typed-done #typed::after { content: '▊'; color: var(--terra); animation: blink 1.1s steps(1) infinite; }
+h1[data-typed] { min-height: 1.3em; }
 @keyframes blink { 50% { opacity: 0; } }
 .ls-output { font-family: var(--mono); font-size: 0.95rem; margin-bottom: 1.5rem; }
 .ls-output a { color: var(--teal); text-decoration: none; margin-right: 1.25rem; }

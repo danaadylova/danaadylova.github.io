@@ -3,6 +3,18 @@
   var enabled = localStorage.getItem(KEY) !== "off";
   var ctx = null;
 
+  var P = {
+    filter: "lowpass",
+    cutoff: 3500,
+    q: 0.7,
+    dur: 0.05,
+    envPow: 3.0,
+    noiseGain: 0.22,
+    clickGain: 0.12,
+    thumpGain: 0.16,
+    deepScale: 0.45,
+  };
+
   function audio() {
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
     return ctx;
@@ -16,29 +28,45 @@
       ac.resume();
     }
     var t = ac.currentTime;
-    var dur = 0.07;
-    var buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
-    var data = buf.getChannelData(0);
-    for (var i = 0; i < data.length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2.2);
+    var cutoff = (deep ? P.cutoff * P.deepScale : P.cutoff) + Math.random() * 300;
+
+    var buf = ac.createBuffer(1, Math.floor(ac.sampleRate * P.dur), ac.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < d.length; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, P.envPow);
     }
     var noise = ac.createBufferSource();
     noise.buffer = buf;
-    var lp = ac.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = (deep ? 750 : 1500) + Math.random() * 500;
+    var f = ac.createBiquadFilter();
+    f.type = P.filter;
+    f.frequency.value = cutoff;
+    f.Q.value = P.q;
     var ng = ac.createGain();
-    ng.gain.value = 0.2 + Math.random() * 0.08;
-    noise.connect(lp);
-    lp.connect(ng);
+    ng.gain.value = P.noiseGain + Math.random() * 0.06;
+    noise.connect(f);
+    f.connect(ng);
     ng.connect(ac.destination);
     noise.start(t);
+
+    if (P.clickGain > 0) {
+      var cbuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.004), ac.sampleRate);
+      var cd = cbuf.getChannelData(0);
+      for (var j = 0; j < cd.length; j++) cd[j] = (Math.random() * 2 - 1) * (1 - j / cd.length);
+      var click = ac.createBufferSource();
+      click.buffer = cbuf;
+      var cg = ac.createGain();
+      cg.gain.value = P.clickGain;
+      click.connect(cg);
+      cg.connect(ac.destination);
+      click.start(t);
+    }
+
     var osc = ac.createOscillator();
     osc.type = "sine";
     osc.frequency.setValueAtTime((deep ? 85 : 120) + Math.random() * 15, t);
     osc.frequency.exponentialRampToValueAtTime(45, t + 0.06);
     var og = ac.createGain();
-    og.gain.setValueAtTime(0.25, t);
+    og.gain.setValueAtTime(P.thumpGain, t);
     og.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
     osc.connect(og);
     og.connect(ac.destination);
@@ -49,6 +77,10 @@
   document.addEventListener("keydown", function (e) {
     if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
     thock(e.code === "Space" || e.key === "Enter", true);
+  });
+
+  document.addEventListener("pointerdown", function () {
+    thock(false, true);
   });
 
   var btn = document.getElementById("sound-toggle");
@@ -65,26 +97,53 @@
     });
   }
 
-  var target = document.getElementById("typed");
-  if (target) {
-    var text = target.getAttribute("data-text") || target.textContent;
-    var interacted = false;
-    var mark = function () { interacted = true; };
-    window.addEventListener("pointerdown", mark, { once: true });
-    window.addEventListener("keydown", mark, { once: true });
-    target.textContent = "";
+  var targets = Array.prototype.slice.call(document.querySelectorAll("[data-typed]"));
+  var prompt = document.getElementById("typed");
+
+  function typeOut(el) {
+    var chars = Array.from(el.getAttribute("data-text") || el.textContent);
+    var isPrompt = el === prompt;
+    var base = isPrompt ? 85 : 45;
+    var jitter = isPrompt ? 95 : 40;
+    el.textContent = "";
+    el.classList.add("typing");
     var i = 0;
     (function step() {
-      if (i < text.length) {
-        target.textContent += text[i];
-        if (interacted && text[i] !== " ") thock(false, false);
+      if (i < chars.length) {
+        el.textContent += chars[i];
+        thock(chars[i] === " ", false);
         i++;
-        setTimeout(step, 85 + Math.random() * 95);
-      } else {
+        setTimeout(step, base + Math.random() * jitter);
+      } else if (isPrompt) {
         document.body.classList.add("typed-done");
+      } else {
+        el.classList.remove("typing");
       }
     })();
-  } else {
+  }
+
+  if (!targets.length) {
     document.body.classList.add("typed-done");
+  } else {
+    var started = false;
+    function startTyping() {
+      if (started) return;
+      started = true;
+      targets.forEach(typeOut);
+    }
+    function unlock() {
+      audio().resume();
+      startTyping();
+    }
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    if (!enabled) {
+      startTyping();
+    } else {
+      var ac = audio();
+      var p = ac.resume();
+      if (p && p.then) p.then(function () { if (ac.state === "running") startTyping(); });
+      setTimeout(startTyping, 1000);
+    }
   }
 })();
