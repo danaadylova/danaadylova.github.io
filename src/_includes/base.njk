@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/css/garden.css" />
   <script>document.documentElement.className += " js";</script>
 </head>
-<body>
+<body{% if bodyClass %} class="{{ bodyClass }}"{% endif %}>
   <header class="site-header">
     <a class="prompt" href="/">~/dana <span class="dollar">$</span></a>
     <nav class="folders" aria-label="Site">

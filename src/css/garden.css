@@ -64,7 +64,45 @@ span.wikilink.broken { color: var(--muted); border-bottom-color: var(--muted); }
 
 mark { background: var(--highlight); padding: 0 3px; color: var(--ink); }
 
-.gloss { font-family: var(--mono); font-size: 0.8em; color: var(--muted); font-style: normal; }
+.sidenote-num {
+  font-family: var(--mono);
+  font-size: 0.7em;
+  color: var(--terra);
+  vertical-align: super;
+  line-height: 0;
+}
+.sidenote {
+  font-family: var(--mono);
+  font-size: 0.82em;
+  color: var(--muted);
+}
+.sidenote::before { content: '· '; }
+
+@media (min-width: 1100px) {
+  body.sidenotes { max-width: 70rem; }
+  body.sidenotes .site-header,
+  body.sidenotes .site-footer,
+  body.sidenotes > main > *:not(.note) {
+    max-width: 46rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  body.sidenotes .note {
+    max-width: 46rem;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+  }
+  body.sidenotes .sidenote {
+    float: right;
+    clear: right;
+    width: 11rem;
+    margin-right: -13rem;
+    margin-top: 0.2em;
+    line-height: 1.5;
+  }
+  body.sidenotes .sidenote::before { content: none; }
+}
 
 .note-figure { margin: 1.5rem 0; }
 .note-figure img {
