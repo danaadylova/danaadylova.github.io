@@ -1,0 +1,23 @@
+---
+layout: base.njk
+---
+<article class="note">
+  <h1>{{ title }}</h1>
+  {% if status or materials or link %}
+  <div class="card meta-card">
+    <table class="meta-table">
+      {% if status %}<tr><td>status</td><td>{{ status }}</td></tr>{% endif %}
+      {% if materials %}<tr><td>materials</td><td>{{ materials | join(" · ") }}</td></tr>{% endif %}
+      {% if link %}<tr><td>link</td><td><a href="{{ link }}">{{ link | replace("https://", "") }}</a></td></tr>{% endif %}
+    </table>
+  </div>
+  {% endif %}
+  {{ content | safe }}
+  {% if backlinks and backlinks.length %}
+  <p class="backlinks">backlinks:
+    {%- for b in backlinks %}
+    <a class="wikilink" href="{{ b.url }}">{{ b.title }}</a>
+    {%- endfor %}
+  </p>
+  {% endif %}
+</article>

@@ -1,0 +1,15 @@
+---
+layout: base.njk
+title: projects
+permalink: /projects/
+tags: []
+eleventyExcludeFromCollections: true
+---
+<h1>projects</h1>
+<p>Things I make. Each one is a note — they link to each other, because everything here does.</p>
+{% for project in collections.project %}
+<div class="card">
+  <h2 style="margin-top: 0;"><a class="wikilink" href="{{ project.url }}">{{ project.data.title }}</a></h2>
+  <p style="margin-bottom: 0;">{{ project.data.summary }}</p>
+</div>
+{% endfor %}

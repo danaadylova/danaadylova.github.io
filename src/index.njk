@@ -1,0 +1,27 @@
+---
+layout: base.njk
+title: home
+eleventyExcludeFromCollections: true
+---
+<p class="typed-line"><span id="typed" data-text="~/dana $ ls">~/dana $ ls</span></p>
+<p class="ls-output">
+  <a href="/blog/">blog/</a>
+  <a href="/projects/">projects/</a>
+  <a href="/resume/">resume/</a>
+  <a href="/now/">now/</a>
+</p>
+
+<p class="intro">Hi, I'm Dana — developer and crafter in the Bay Area. I like building small, useful things, usually somewhere between <em>code</em> and <em>yarn</em>. 🧶</p>
+
+<div class="card">
+  <h2 style="margin-top: 0;">now</h2>
+  <p style="margin-bottom: 0.25rem;">Building [[unraveled-makes]], teaching a model to recognize <mark>sweaters</mark> for [[sweater-vision]], and writing notes as I go.</p>
+  <p style="margin-bottom: 0;"><a class="wikilink" href="/now/">more →</a></p>
+</div>
+
+<h2>recent notes</h2>
+<ul class="post-list">
+{% for post in collections.post | reverse %}{% if loop.index <= 5 %}
+  <li><span class="date">{{ post.date | gdate }}</span> <a href="{{ post.url }}">{{ post.data.title }}</a></li>
+{% endif %}{% endfor %}
+</ul>
