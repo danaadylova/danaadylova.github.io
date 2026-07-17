@@ -5,14 +5,14 @@
 
   var P = {
     filter: "lowpass",
-    cutoff: 3500,
+    cutoff: 1500,
     q: 0.7,
-    dur: 0.05,
-    envPow: 3.0,
-    noiseGain: 0.22,
-    clickGain: 0.12,
-    thumpGain: 0.16,
-    deepScale: 0.45,
+    dur: 0.07,
+    envPow: 2.2,
+    noiseGain: 0.24,
+    clickGain: 0,
+    thumpGain: 0.25,
+    deepScale: 0.5,
   };
 
   function audio() {
