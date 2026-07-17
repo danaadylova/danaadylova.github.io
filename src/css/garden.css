@@ -76,24 +76,14 @@ mark { background: var(--highlight); padding: 0 3px; color: var(--ink); }
   font-size: 0.82em;
   color: var(--muted);
 }
-.sidenote::before { content: '· '; }
+.sidenote-tag {
+  color: var(--terra);
+  font-weight: 500;
+  margin-right: 0.15em;
+}
 
 @media (min-width: 1100px) {
-  body.sidenotes { max-width: 70rem; }
-  body.sidenotes .site-header,
-  body.sidenotes .site-footer,
-  body.sidenotes > main > *:not(.note) {
-    max-width: 46rem;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  body.sidenotes .note {
-    max-width: 46rem;
-    margin-left: auto;
-    margin-right: auto;
-    position: relative;
-  }
-  body.sidenotes .sidenote {
+  .note .sidenote {
     float: right;
     clear: right;
     width: 11rem;
@@ -101,7 +91,6 @@ mark { background: var(--highlight); padding: 0 3px; color: var(--ink); }
     margin-top: 0.2em;
     line-height: 1.5;
   }
-  body.sidenotes .sidenote::before { content: none; }
 }
 
 .note-figure { margin: 1.5rem 0; }
