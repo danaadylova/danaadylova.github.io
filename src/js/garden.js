@@ -1,6 +1,6 @@
 (function () {
   var KEY = "garden-sound";
-  var enabled = localStorage.getItem(KEY) !== "off";
+  var enabled = localStorage.getItem(KEY) === "on";
   var ctx = null;
 
   var P = {
@@ -77,10 +77,6 @@
   document.addEventListener("keydown", function (e) {
     if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
     thock(e.code === "Space" || e.key === "Enter", true);
-  });
-
-  document.addEventListener("pointerdown", function () {
-    thock(false, true);
   });
 
   var btn = document.getElementById("sound-toggle");
