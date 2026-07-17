@@ -4,7 +4,7 @@ const slugMap = new Map();
 const WIKILINK = /\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g;
 
 export default function (eleventyConfig) {
-  eleventyConfig.addPassthroughCopy({ "src/css": "css", "src/js": "js", CNAME: "CNAME" });
+  eleventyConfig.addPassthroughCopy({ "src/css": "css", "src/js": "js", "src/img": "img", CNAME: "CNAME" });
 
   eleventyConfig.addPlugin(feedPlugin, {
     type: "atom",
