@@ -7,7 +7,7 @@
 | **Created** | 2026-09-28 · **Updated** 2026-09-28 |
 | **Site** | https://danaadylova.com (Eleventy 3 → GitHub Pages via `.github/workflows/deploy.yml`) |
 | **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelves `read`, `currently-reading`, [`did-not-finish`](https://www.goodreads.com/review/list/135558742?shelf=did-not-finish) + tag [`dnf`](https://www.goodreads.com/review/list/135558742-dana?tag=dnf) (feed confirmed public) |
-| **Prototype** | https://claude.ai/artifact/2eoFCUqNNhRmdKgKBPn1Ak (v8, sample data incl. a 100-book year) |
+| **Prototype** | https://claude.ai/artifact/2eoFCUqNNhRmdKgKBPn1Ak (v9, sample data incl. a 100-book year) |
 | **Comments backend** | existing unraveled.makes FastAPI + Postgres service (see §7) |
 
 ---
@@ -170,8 +170,11 @@ Direction: **a warm, precise reading room.** The coziness comes from material an
 - It follows the visitor's system dark-mode preference. A day/evening toggle is optional. This is the only dark mode on the site for now, so decide at build time whether it stays scoped to `/books`.
 
 **Big years (up to about 100+ books)**
-- A 100-book year is about **5 shelves** at desktop width (about 1,500px tall), and about 9 on a phone. To keep the page scannable, each year **folds to its first 2 shelves**. Below them, the **top of the 3rd shelf peeks out** (cropped to about 58px and fading out) as a cue that there's more. A pill button overlaps the bottom edge of the bookcase: `show all 100 books · 59 more ↓`. Years with 3 shelves or fewer never fold.
-- Expanding adds the rest of the shelves (books drop in, shelf by shelf). `show fewer ↑` folds it back and keeps the button under the cursor, so the page doesn't jump. Each year's open or closed state is remembered for the session.
+- A 100-book year is about **5 shelves** at desktop width (about 1,500px tall), and about 9 on a phone. To keep the page scannable, each year **folds to 2 shelves**. Years with 3 shelves or fewer never fold, and always show everything by read date.
+- **Folded order = best first:** upright books sorted by **star rating (5★ → 4★ → 3★ …)**, then by **read date, newest first** within each rating. So the folded view is effectively that year's favorites. DNF piles aren't shown while folded. The **top of the next shelf peeks out** (cropped to about 58px, fading out), and the year header shows `★ top rated first`.
+- A pill button overlaps the bottom edge of the bookcase: `show all 100 by date · 60 more ↓`.
+- **Expanded order = chronological:** all books by read date (newest first), with the DNF piles at the end. The header shows `all books · by read date` and the button becomes `back to top rated ↑`.
+- **Transition:** books already visible **glide to their new positions** (FLIP, about 620ms), and newly revealed books drop in, lightly staggered. Folding back re-sorts the same way and keeps the button under the cursor, so the page doesn't jump. Each year's open or closed state is remembered for the session. With reduced motion, the change is instant.
 - When the **loved** or **unfinished** filter is on, all years are expanded, so every highlighted book is visible.
 - A small **"jump to"** row under the filters (`reading · 2026 100 · 2025 …`) links to each shelf.
 - **DNF piles** are balanced: the fewest piles that fit the shelf height, filled evenly. If a pile spills onto a shelf of its own, a few upright books move down to keep it company, so no shelf is left nearly empty.
@@ -450,7 +453,7 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 | 17 | Opened-book backdrop | Much dimmer (about 80–88%) with a warm spotlight |
 | 18 | Slow-motion toggle | **Removed.** It was a prototype review tool and won't ship. |
 | 19 | DNF sources | Shelf `did-not-finish` **and** tag `dnf` |
-| 22 | Large years | Fold to 2 shelves + peek + "show all N books"; filters expand everything; jump-to-year row |
+| 22 | Large years | Fold to 2 shelves + peek. **Folded = sorted by rating, then read date**; expanded = all by read date; books glide between orders. Filters expand everything; jump-to-year row |
 | 21 | Top shelf name | **"currently reading"** (renamed from "on the nightstand") |
 | 20 | Mug on the currently-reading shelf | 3D-shaded stoneware mug with canvas steam |
 
