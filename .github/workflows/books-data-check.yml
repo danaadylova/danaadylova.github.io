@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # only to publish the throwaway books-preview-data branch
 
 jobs:
   check:
@@ -38,3 +38,14 @@ jobs:
             _site/img/books
             _site/css
           retention-days: 7
+      - name: Publish data snapshot for previews (throwaway branch)
+        if: github.ref != 'refs/heads/main'
+        run: |
+          mkdir -p /tmp/pub/covers
+          cp .cache/books/snapshot.json /tmp/pub/
+          cp -r .cache/books/covers/out .cache/books/covers/meta /tmp/pub/covers/
+          cd /tmp/pub
+          git init -q -b books-preview-data
+          git add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -qm "books preview data from ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" books-preview-data
