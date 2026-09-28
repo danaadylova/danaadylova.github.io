@@ -539,11 +539,11 @@ All images are rendered from the interactive prototype with the real fonts. Book
 | 17 | Opened-book backdrop | Much dimmer (about 80–88%) with a warm spotlight |
 | 18 | Slow-motion toggle | **Removed.** It was a prototype review tool and won't ship. |
 | 19 | DNF sources | Shelf `did-not-finish` **and** tag `dnf` |
+| 20 | Mug on the currently-reading shelf | 3D-shaded stoneware mug with canvas steam |
+| 21 | Top shelf name | **"currently reading"** (renamed from "on the nightstand") |
+| 22 | Large years | Fold to 2 shelves + peek. **Folded = sorted by rating, then read date**; expanded = all by read date; books glide between orders. Filters expand everything; jump-to-year row |
 | 23 | My own notes on the site | **Author mode** via magic-link sign-in. My notes are auto-approved and **pinned in "dana's notes"** (journal-style, newest first); inline moderation |
 | 24 | Notes durability | Postgres (survives restarts) + **nightly export to Git** (`notes.json`) + static rendering + weekly `pg_dump`. Confirm the DB plan is persistent |
-| 22 | Large years | Fold to 2 shelves + peek. **Folded = sorted by rating, then read date**; expanded = all by read date; books glide between orders. Filters expand everything; jump-to-year row |
-| 21 | Top shelf name | **"currently reading"** (renamed from "on the nightstand") |
-| 20 | Mug on the currently-reading shelf | 3D-shaded stoneware mug with canvas steam |
 
 ## 14. Open questions
 
