@@ -584,7 +584,7 @@
       '<textarea id="' + idp + '-body" rows="1" maxlength="2000" placeholder="' + esc(placeholder) + '"></textarea>' +
       '<div class="row2">' + (AUTHOR ? '<span class="as-dana">as dana</span>' :
         '<label class="sr" for="' + idp + '-name">Your name</label><input type="text" id="' + idp + '-name" maxlength="40" placeholder="your name" value="' + esc(savedName) + '">') +
-      '<label class="hp" aria-hidden="true">Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>' +
+      '<div class="hp" aria-hidden="true"><input type="text" name="hp_margin_x" tabindex="-1" autocomplete="off" data-lpignore="true" data-1p-ignore aria-label="leave empty"></div>' +
       '<button type="submit" class="pin">' + btn + '</button></div></div><p class="err" role="alert" hidden></p>';
   }
   function autogrow(ta) { ta.addEventListener("input", function () { ta.style.height = "auto"; ta.style.height = Math.min(140, ta.scrollHeight) + "px"; }); }
@@ -634,9 +634,13 @@
     if (!form.dataset.key) form.dataset.key = uuid(); // same key on retry → never posted twice
     api("/books/" + b.id + "/comments", { method: "POST", body: {
       name: name, body: body, parent_id: parentId || null, client_key: form.dataset.key,
-      website: form.querySelector('input[name="website"]').value, elapsed_ms: Date.now() - openedAt
+      website: form.querySelector('input[name="hp_margin_x"]').value, elapsed_ms: Date.now() - openedAt
     } }).then(function (j) {
       btn.disabled = false; delete form.dataset.key;
+      if (!j.id) { // the server's spam check dropped it: say so instead of pretending it was pinned
+        form.querySelector('input[name="hp_margin_x"]').value = ""; // in case autofill put something there
+        err.textContent = "That note didn't go through. Wait a few seconds and press “pin it” again."; err.hidden = false; return;
+      }
       if (!AUTHOR) rememberName(name);
       ta.value = ""; ta.style.height = "auto";
       var created = j.comment || { id: j.id, name: name, body: body, created_at: new Date().toISOString(), status: "pending", parent_id: parentId || null };
