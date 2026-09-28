@@ -3,62 +3,48 @@ layout: base.njk
 title: books
 permalink: /books/
 eleventyExcludeFromCollections: true
-description: Everything Dana has read, from Goodreads.
+description: Everything Dana has read, on a shelf — pulled from Goodreads.
+pageClass: page-books
+extraCss: /css/books.css
+extraJs: /js/books.js
+extraFonts: https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Instrument+Serif:ital@0;1&display=swap
 ---
-{#- Step 2 of the rollout (docs/prd-books.md §12): plain data view to verify the pipeline.
-    The shelf UI from the prototype replaces this markup next; not linked from the nav yet. -#}
-<style>
-  .bk-sub { font-family: var(--mono); font-size: .8rem; color: var(--muted); margin-top: -.25rem; }
-  .bk-grid { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 1rem .9rem; }
-  .bk-grid li { font-size: .78rem; line-height: 1.35; }
-  .bk-cover { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 2px 5px 5px 2px; box-shadow: 2px 2px 0 var(--card-border); background: var(--card); }
-  .bk-fallback { display: flex; align-items: flex-end; padding: .5rem; font-family: var(--mono); font-size: .7rem; line-height: 1.2; }
-  .bk-t { display: block; margin-top: .35rem; color: var(--ink); font-weight: 500; }
-  .bk-m { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
-  .bk-dnf { color: var(--pill-ink); background: var(--pill-bg); border-radius: 999px; padding: 0 .4rem; }
-  .bk-debug { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
-</style>
-
+{#- Shelf UI: src/js/books.js renders #shelves from #books-data. Design: docs/prd-books.md §6.0. -#}
 <h1 data-typed>books</h1>
-<p class="bk-sub">{{ books.total }} books · {{ books.lovedTotal }} loved · {{ books.dnfTotal }} unfinished · updated {{ books.fetchedAt | gdate }} · via goodreads</p>
+<p class="subtitle">{{ books.total }} books · updated {{ books.fetchedAt | gdate | lower }} · via goodreads</p>
 
-{%- macro bookCard(b) -%}
+<div class="tools">
+  <div class="seg" role="group" aria-label="Show" id="filters">
+    <button type="button" data-f="all" aria-pressed="true">all <span class="n">{{ books.total }}</span></button>
+    <button type="button" data-f="loved" aria-pressed="false"><span class="star" aria-hidden="true">★</span> loved <span class="n">{{ books.lovedTotal }}</span></button>
+    <button type="button" data-f="dnf" aria-pressed="false">unfinished <span class="n">{{ books.dnfTotal }}</span></button>
+  </div>
+  <span class="legend"><span><i></i>4★</span><span><i></i><b></b>5★</span><span>lying flat = didn't finish</span></span>
+</div>
+<nav class="jump" id="jump" aria-label="Jump to year">
+  <span>jump to</span>{% if books.reading | length %}<a href="#ynow">reading</a>{% endif %}
+  {%- for y in books.years %}<a href="#y{{ y.year }}">{{ y.year }} <span class="n">{{ y.books | length }}</span></a>{% endfor %}
+</nav>
+
+<div id="shelves"></div>
+
+{#- Without JavaScript: a plain grid of covers. -#}
+{%- macro card(b) -%}
 <li>
-  <a href="{{ b.url }}" title="{{ b.title }}{% if b.series %} ({{ b.series }} #{{ b.seriesNumber }}){% endif %} — {{ b.author }}">
-    {%- if b.cover -%}
-    <picture>
-      <source srcset="{{ b.cover }}.webp" type="image/webp">
-      <img class="bk-cover" src="{{ b.cover }}.jpg" alt="" width="{{ b.coverWidth }}" height="{{ b.coverHeight }}" loading="lazy" decoding="async">
-    </picture>
-    {%- else -%}
-    <span class="bk-cover bk-fallback" style="background:{{ b.color }};color:{{ b.textColor }}">{{ b.title }}</span>
-    {%- endif -%}
+  <a href="{{ b.url }}">
+    {%- if b.cover %}<img src="{{ b.cover }}.jpg" alt="{{ b.title }}" width="{{ b.coverWidth }}" height="{{ b.coverHeight }}" loading="lazy" decoding="async">
+    {%- else %}<span style="display:block;aspect-ratio:2/3;background:{{ b.color }};color:{{ b.textColor }};padding:.4rem">{{ b.title }}</span>{% endif -%}
   </a>
-  <span class="bk-t">{{ b.title }}</span>
-  <span class="bk-m">{{ b.author }}</span><br>
-  <span class="bk-m">
-    {%- if b.reading %}started {{ b.whenLabel }}
-    {%- elif b.dnf %}<span class="bk-dnf">dnf</span> {{ b.whenLabel }}
-    {%- else %}{% for i in range(0, b.rating) %}★{% endfor %}{% for i in range(b.rating, 5) %}☆{% endfor %} · {{ b.whenLabel }}{% endif -%}
-  </span>
+  {{ b.title }}<br><span class="bk-m">{{ b.author }} · {% if b.reading %}reading{% elif b.dnf %}dnf{% elif b.rating %}{% for i in range(0, b.rating) %}★{% endfor %}{% endif %}</span>
 </li>
 {%- endmacro %}
+<div class="books-fallback">
+  {% if books.reading | length %}<h2>currently reading</h2>
+  <ul class="bk-grid">{% for b in books.reading %}{{ card(b) }}{% endfor %}</ul>{% endif %}
+  {% for y in books.years %}<h2>{{ y.year }}</h2>
+  <ul class="bk-grid">{% for b in y.books %}{{ card(b) }}{% endfor %}</ul>{% endfor %}
+</div>
 
-<h2>currently reading <small class="bk-m">({{ books.reading | length }})</small></h2>
-{% if books.reading | length %}
-<ul class="bk-grid">{% for b in books.reading %}{{ bookCard(b) }}{% endfor %}</ul>
-{% else %}<p class="bk-m">not reading anything right now</p>{% endif %}
-
-{% for y in books.years %}
-<h2 id="y{{ y.year }}">{{ y.year }} <small class="bk-m">({{ y.books | length }}{% if y.dnfCount %} · {{ y.dnfCount }} unfinished{% endif %})</small></h2>
-<ul class="bk-grid">{% for b in y.books %}{{ bookCard(b) }}{% endfor %}</ul>
-{% endfor %}
-
-<details class="bk-debug">
-  <summary>data check</summary>
-  <p>source: {{ books.source }} · fetched {{ books.fetchedAt }} · {{ books.noCover }} without a cover</p>
-  {% if books.skippedUndated | length %}
-  <p>left out because they have no read date on Goodreads ({{ books.skippedUndated | length }}):</p>
-  <ul>{% for s in books.skippedUndated %}<li><a href="https://www.goodreads.com/book/show/{{ s.id }}">{{ s.title }}</a></li>{% endfor %}</ul>
-  {% endif %}
-</details>
+<div class="hover-label" id="hoverLabel" aria-hidden="true"><span class="ht"></span><span class="ha"></span></div>
+<div class="sr" aria-live="polite" id="live"></div>
+<script type="application/json" id="books-data">{{ books.payload | safe }}</script>

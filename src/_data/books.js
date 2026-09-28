@@ -9,6 +9,7 @@ import config from "../../lib/books/config.js";
 import { fetchShelf } from "../../lib/books/fetch.js";
 import { buildLibrary, spineGeometry } from "../../lib/books/goodreads.js";
 import { processCovers } from "../../lib/books/covers.js";
+import { loadReviews } from "../../lib/books/reviews.js";
 
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 const log = {
@@ -79,14 +80,28 @@ async function decorate(lib) {
       whenISO: when ? when.toISOString().slice(0, 10) : "",
     };
   };
-  const years = lib.years.map((y) => ({ ...y, books: y.books.map(withLook) }));
-  const reading = lib.reading.map(withLook);
+  const reviews = await loadReviews("src/reviews", log);
+  const withReview = (b) => (reviews.has(b.id) ? { ...b, review: reviews.get(b.id) } : b);
+  const years = lib.years.map((y) => ({ ...y, books: y.books.map(withLook).map(withReview) }));
+  const reading = lib.reading.map(withLook).map(withReview);
   const noCover = all.filter((b) => !covers.get(b.id)?.cover).length;
   log.info(
     `${lib.total} books in ${years.length} years (${lib.dnfTotal} unfinished, ${lib.lovedTotal} loved), ` +
       `${reading.length} currently reading, ${lib.skippedUndated.length} skipped (no read date), ${noCover} without a cover · source: ${lib.source}`,
   );
-  return { ...lib, years, reading, noCover, foldRows: config.foldRows };
+  // Compact JSON for src/js/books.js (short keys keep ~400 books around 100 KB).
+  const compact = (b) => ({
+    id: b.id, t: b.title, s: b.series ? `${b.series}${b.seriesNumber ? ` #${b.seriesNumber}` : ""}` : undefined, a: b.author,
+    r: b.rating || undefined, p: b.pages || undefined, d: b.dnf ? 1 : undefined, y: b.year, m: b.month,
+    c: b.color, tc: b.textColor, w: b.width, h: b.height, f: b.font, v: b.variant,
+    cv: b.cover || undefined, ar: b.cover && b.coverHeight ? +(b.coverWidth / b.coverHeight).toFixed(3) : undefined,
+    u: b.url, rv: b.review?.html,
+  });
+  const payload = JSON.stringify({
+    lovedTotal: lib.lovedTotal, dnfTotal: lib.dnfTotal, foldRows: config.foldRows, notesApi: config.notesApi || null,
+    reading: reading.map(compact), years: years.map((y) => ({ year: y.year, books: y.books.map(compact) })),
+  }).replace(/</g, "\\u003c"); // safe inside <script>
+  return { ...lib, years, reading, noCover, foldRows: config.foldRows, payload };
 }
 
 let memo; // `eleventy --serve` re-runs data files on every change; don't hit Goodreads each time.
