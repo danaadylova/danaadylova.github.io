@@ -3,11 +3,11 @@
 | | |
 |---|---|
 | **Owner** | Dana Adylova |
-| **Status** | Draft v4 (visual direction set from the interactive prototype) |
+| **Status** | Draft v5 (visual direction set from the interactive prototype) |
 | **Created** | 2026-09-28 · **Updated** 2026-09-28 |
 | **Site** | https://danaadylova.com (Eleventy 3 → GitHub Pages via `.github/workflows/deploy.yml`) |
-| **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelves `read`, `currently-reading` + [`did-not-finish`](https://www.goodreads.com/review/list/135558742?shelf=did-not-finish) (feed confirmed public) |
-| **Prototype** | https://claude.ai/artifact/2eoFCUqNNhRmdKgKBPn1Ak (v4, sample data) |
+| **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelves `read`, `currently-reading`, [`did-not-finish`](https://www.goodreads.com/review/list/135558742?shelf=did-not-finish) + tag [`dnf`](https://www.goodreads.com/review/list/135558742-dana?tag=dnf) (feed confirmed public) |
+| **Prototype** | https://claude.ai/artifact/2eoFCUqNNhRmdKgKBPn1Ak (v5, sample data) |
 | **Comments backend** | existing unraveled.makes FastAPI + Postgres service (see §7) |
 
 ---
@@ -72,7 +72,8 @@ Fields used per `<item>`:
 
 - **Undated books are excluded.** A book with no `user_read_at` is skipped. There's no "undated" shelf and no fallback to `user_date_added`. The build log reports how many were skipped, so they can be fixed on Goodreads if wanted.
 - **Re-reads:** RSS exposes only the latest read date, so a re-read appears once, in its latest year. This is accepted.
-- **DNF books:** my DNF shelf is **`did-not-finish`**. The fetcher always pulls `?shelf=did-not-finish` as well as `?shelf=read` and merges the two by `book_id`, with `dnf: true` on anything from the DNF shelf. This works whether `did-not-finish` is an exclusive shelf or a tag on books that are also in `read`. As a second check, any `read` item whose `user_shelves` includes `did-not-finish` is also marked DNF. The shelf name lives in `src/_data/books.config.js`. DNF books still need a date to be shown. They use `user_read_at`, or for an exclusive DNF shelf, `user_date_added` as the "stopped" date. That is the only case where the added date is used.
+- **DNF books:** I use **two** DNF markers: the shelf **`did-not-finish`** and the tag **`dnf`**. The config holds a list, `dnfShelves: ["did-not-finish", "dnf"]` in `src/_data/books.config.js`. For each name, the fetcher pulls `?shelf=<name>` as well as `?shelf=read` and merges everything by `book_id` (deduped), with `dnf: true` on anything from either list. As a second check, any `read` item whose `user_shelves` includes either name is also marked DNF.
+  - *Verify on the first build:* Goodreads now calls some shelves "tags" (`?tag=dnf` in the web URL). The RSS endpoint is expected to accept `?shelf=dnf` for a tag, since tags are shelves under the hood. If it returns nothing, fall back to the `user_shelves` check on the `read` feed, and log a warning so it's visible. DNF books still need a date to be shown. They use `user_read_at`, or for an exclusive DNF shelf, `user_date_added` as the "stopped" date. That is the only case where the added date is used.
 - **Currently reading:** the fetcher also pulls `?shelf=currently-reading` for the "on the nightstand" shelf (§6.0). The RSS has no start date, so `user_date_added` is shown as "started". These books aren't grouped by year, and once a book moves to `read` it appears in its year instead.
 - **Pagination:** fetch `page=1,2,3…` until a page returns zero items, with a hard cap of 50 pages.
 - **Politeness:** the fetch runs only at build time, about once a day, with an honest `User-Agent` (`danaadylova.com-books/1.0`). The site never fetches from visitors' browsers.
@@ -139,7 +140,7 @@ Direction: **a warm, precise reading room.** The coziness comes from material an
 **Page structure (top to bottom)**
 1. `# books` heading + mono subtitle (`44 books · updated … · via goodreads`).
 2. **Filter** segmented control: `all · ★ loved · unfinished`, with counts. Non-matching books **dim** to about 20% opacity and desaturate instead of disappearing, so the shelf never re-flows. "Loved" means 4★ and 5★. A small legend explains the gold stars and flat books.
-3. **"on the nightstand"**: a shelf of books I'm currently reading, standing **face-out** (covers visible, tilted ±1.5°), each with a terra ribbon bookmark, plus a small ceramic **mug with animated steam** at the end. If nothing is on the shelf: *"nothing on the nightstand right now"*. Clicking a book lifts it and grows it to center (no turn, since it's already facing out). The panel shows a `reading now` pill and "started {month}".
+3. **"on the nightstand"**: a shelf of books I'm currently reading, standing **face-out** (covers visible, tilted ±1.5°), each with a terra ribbon bookmark, plus a small **3D-shaded stoneware mug** at the end (cream speckled clay dipped in terra glaze with drips, glazed rim, tea surface with a highlight, handle, and a contact shadow; pure CSS). **Steam** is a tiny canvas particle system: soft, vertically stretched wisps rise in two lanes, curl sideways and fade. It's warm grey and very faint by day, and soft cream by evening. It pauses when offscreen, when a book is open or when the tab is hidden, and shows a single still frame with reduced motion. If nothing is on the shelf: *"nothing on the nightstand right now"*. Clicking a book lifts it and grows it to center (no turn, since it's already facing out). The panel shows a `reading now` pill and "started {month}".
 4. **Year shelves**, newest first.
 
 **Shelves**
@@ -150,7 +151,7 @@ Direction: **a warm, precise reading room.** The coziness comes from material an
 - **Ratings on the spine:** 4★ = a small **gold-foil star** near the head; 5★ = foil star + **foil head/tail bands**, and a soft shine runs down the spine on hover. The panel shows stars in brass.
 
 **Type**
-- **Year numerals:** Fraunces italic with its `SOFT 100` / `WONK 1` axes (a quirky, cozy serif), about 60px. Digits get small seeded rotations and baseline offsets, and wiggle the other way on hover. The last digit is in terra, with a **wavy yarn underline** (CSS mask). The nightstand heading uses the same treatment in words.
+- **Year numerals:** large, plain **sans serif** (Inter 600, about 56px, tight `-0.05em` tracking), with a mono book count beside it. The quirky Fraunces version was tried and rejected. The nightstand heading uses the same style, with "nightstand" in terra.
 - **Instrument Serif** for book titles in the panel, the hover label, and my review text.
 - Space Mono + Inter remain for everything else, and Caveat only for the "dana's notes" label, the composer placeholder and the pending tag.
 
@@ -437,9 +438,11 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 | 13 | 4★/5★ highlight | Foil star (4★), foil star + bands + hover shine (5★), plus a **loved** filter |
 | 14 | Currently reading | New **"on the nightstand"** shelf at the top, face-out covers + mug |
 | 15 | Evening mode | Yes, near-black charcoal (not brown), following system dark mode |
-| 16 | Year numerals | Quirky, cozy Fraunces (SOFT/WONK) with tilted digits and a wavy underline |
+| 16 | Year numerals | Plain large **sans serif** (Fraunces quirky version rejected) |
 | 17 | Opened-book backdrop | Much dimmer (about 80–88%) with a warm spotlight |
 | 18 | Slow-motion toggle | **Removed.** It was a prototype review tool and won't ship. |
+| 19 | DNF sources | Shelf `did-not-finish` **and** tag `dnf` |
+| 20 | Nightstand mug | 3D-shaded stoneware mug with canvas steam |
 
 ## 14. Open questions
 
