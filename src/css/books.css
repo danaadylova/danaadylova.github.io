@@ -550,3 +550,24 @@ html:not(.js) .tools, html:not(.js) .jump { display: none; }
 .bk-grid li { font-size: .78rem; line-height: 1.35; }
 .bk-grid img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 2px 5px 5px 2px; box-shadow: 2px 2px 0 var(--card-border); }
 .bk-grid .bk-m { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+
+/* ── margin notes: author mode, pending, skeleton, sign-in ── */
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.as-dana { flex: 1; font-family: var(--hand); font-size: 18px; color: var(--terra-ink); }
+.dn-entry { border-top: 1px dashed color-mix(in srgb, var(--line) 90%, transparent); margin-top: 8px; padding-top: 2px; }
+.dn-entry p { margin: 0; font-family: var(--display); font-size: 19px; line-height: 30px; color: var(--ink); }
+.dn-entry .actions, .review .actions { line-height: 24px; }
+.note .actions .linkish + .linkish { margin-left: 0; }
+.note.pending .actions [data-mod="approve"] { color: var(--teal); }
+.notes-err { font-family: var(--mono); font-size: 12px; color: var(--terra-ink); margin: 0 0 12px; }
+.skeleton { display: grid; gap: 10px; }
+.skeleton i { display: block; height: 12px; border-radius: 6px; background: var(--sheet-2); animation: sk 1.2s ease-in-out infinite alternate; }
+.skeleton i:nth-child(2) { width: 80%; } .skeleton i:nth-child(3) { width: 55%; }
+@keyframes sk { to { opacity: .45; } }
+.edit-form { margin-top: 4px; }
+.author-bar { margin-top: 40px; font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+.author-bar a { color: var(--terra-ink); }
+.author-bar .signin { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
+.author-bar input { font: inherit; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+.pin[disabled] { opacity: .6; cursor: progress; }
+@media (prefers-reduced-motion: reduce) { .skeleton i { animation: none; } }

@@ -23,21 +23,22 @@
   function mk(o) {
     var b = { id: String(o.id), title: o.t, series: o.s || null, author: o.a, rating: o.r || 0, pages: o.p || null, dnf: !!o.d,
       year: o.y, month: o.m ? o.m - 1 : -1, review: o.rv || null, notes: [], color: o.c, text: o.tc,
-      w: o.w, h: o.h, font: o.f, variant: o.v, cover: o.cv || null, ar: o.ar || .66, url: o.u };
+      w: o.w, h: o.h, font: o.f, variant: o.v, cover: o.cv || null, ar: o.ar || .66, url: o.u,
+      noteCount: o.nc || 0, staticNotes: o.nn || null, hasDana: !!o.dn };
     BOOKS[b.id] = b;
     return b;
   }
   DATA.years.forEach(function (y) { YEARS.push({ year: y.year, books: y.books.map(mk) }); });
   NOW = DATA.reading.map(function (o) { var b = mk(o); b.reading = true; b.h = 176; return b; });
   var lovedN = DATA.lovedTotal, dnfN = DATA.dnfTotal;
-  var NOTES_API = DATA.notesApi || null; // margin notes backend (PRD §7) — not live yet
+  var NOTES_API = DATA.notesApi || null; // margin notes API (PRD §7): unraveled.makes /site
 
   /* ───────────── helpers ───────────── */
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   function dur(ms) { return ms; }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); }
   function lastName(a) { var p = a.split(" "); return p[p.length - 1]; }
-  function approvedCount(b) { return b.notes.filter(function (n) { return !n.pending; }).length; }
+  function approvedCount(b) { return b.noteCount || 0; }
   function stars(r) { return "★★★★★".slice(0, r) + "☆☆☆☆☆".slice(0, 5 - r); }
   function scaleFactor() { return window.innerWidth < 480 ? .86 : 1; }
   function yarnBall(name) {
@@ -60,7 +61,7 @@
     return '<button class="' + cls + '" type="button" data-id="' + b.id + '" aria-label="' + esc(labelFor(b)) + '" style="' + style + '">' + spineInner(b) +
       (fav ? '<span class="foil-star" aria-hidden="true"></span>' : "") +
       (b.rating === 5 ? '<span class="glint-wrap" aria-hidden="true"><span class="glint"></span></span>' : "") +
-      (b.review ? '<span class="ribbon" aria-hidden="true"></span>' : "") +
+      (b.review || b.hasDana ? '<span class="ribbon" aria-hidden="true"></span>' : "") +
       (cnt ? '<span class="slip" aria-hidden="true"></span>' : "") + '</button>';
   }
 
@@ -469,38 +470,200 @@
     }
   });
 
-  /* ───────────── reading sheet ───────────── */
+  /* ───────────── reading sheet + margin notes (API: PRD §7, unraveled.makes /site/*) ───────────── */
   var savedName = "";
   try { savedName = localStorage.getItem("books-note-name") || ""; } catch (err) {}
   function rememberName(n) { savedName = n; try { localStorage.setItem("books-note-name", n); } catch (err) {} }
+  var AUTHOR = false;
+  var live = document.getElementById("live");
 
-  function noteHTML(n) {
-    return '<article class="note' + (n.pending ? " pending" : "") + '" data-note="' + n.id + '">' + yarnBall(n.name) +
-      '<div class="nh"><span class="who">' + esc(n.name) + '</span>' + (n.dana ? '<span class="author-tag">author</span>' : "") +
-      '<span class="ago">' + esc(n.ago) + '</span></div>' +
-      '<div class="body-wrap"><p>' + (n.replyTo ? '<span class="at">@' + esc(n.replyTo) + '</span> ' : "") + esc(n.body).replace(/\n/g, "<br>") + '</p></div>' +
-      (n.pending ? '<div class="pending-tag">waiting for dana to read it ✎</div>' :
-        '<div class="actions"><button type="button" class="linkish" data-reply="' + n.id + '" data-name="' + esc(n.name) + '">reply</button></div>') +
-      '</article>';
+  function api(path, opts) {
+    opts = opts || {};
+    return fetch(NOTES_API + path, {
+      method: opts.method || "GET", credentials: "include",
+      headers: opts.body ? { "Content-Type": "application/json" } : undefined,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) { var e = new Error((j.detail && j.detail.message) || "Something went wrong. Try again in a bit."); e.status = r.status; throw e; }
+        return j;
+      });
+    }, function () { throw new Error("Couldn't reach the notes right now. Try again in a bit."); });
   }
-  function notesListHTML(b) {
-    if (!b.notes.length) return '<p class="empty"><span class="hand">no margin notes yet</span>Be the first to leave one.</p>';
-    return '<ol class="notes">' + b.notes.map(function (n) {
-      return '<li class="thread' + (n.replies.length ? " has-replies" : "") + '">' + noteHTML(n) +
-        (n.replies.length ? '<ol class="replies">' + n.replies.map(function (r) { return '<li>' + noteHTML(r) + '</li>'; }).join("") + '</ol>' : "") + '</li>';
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, function (c) { return (c ^ (Math.random() * 16) >> (c / 4)).toString(16); });
+  }
+  function ago(iso) {
+    var s = (Date.now() - Date.parse(iso)) / 1000;
+    if (s < 90) return "just now";
+    if (s < 3600) return Math.round(s / 60) + " min ago";
+    if (s < 86400) return Math.round(s / 3600) + " h ago";
+    if (s < 86400 * 2) return "yesterday";
+    if (s < 86400 * 14) return Math.round(s / 86400) + " days ago";
+    var d = new Date(iso);
+    return MONTHS[d.getMonth()] + " " + d.getDate() + (d.getFullYear() !== new Date().getFullYear() ? ", " + d.getFullYear() : "");
+  }
+  function fullDate(iso) { var d = new Date(iso); return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); }
+  function textHTML(s) { return esc(s).replace(/\n/g, "<br>"); }
+
+  /* Your own not-yet-approved notes, kept in this browser so they survive a reload. */
+  function localPending(bookId) {
+    try {
+      var all = JSON.parse(localStorage.getItem("books-pending") || "{}"), month = 30 * 86400000;
+      return (all[bookId] || []).filter(function (n) { return Date.now() - Date.parse(n.created_at) < month; });
+    } catch (err) { return []; }
+  }
+  function saveLocalPending(bookId, list) {
+    try { var all = JSON.parse(localStorage.getItem("books-pending") || "{}"); all[bookId] = list; localStorage.setItem("books-pending", JSON.stringify(all)); } catch (err) {}
+  }
+
+  /* API/static list → { dana: [my top-level notes, newest first], threads: [visitor threads, oldest first] } */
+  function splitThread(b, comments) {
+    var dana = [], threads = [], seen = {};
+    comments.forEach(function (c) {
+      seen[c.id] = 1; (c.replies || []).forEach(function (r) { seen[r.id] = 1; });
+      if (c.is_author) dana.push(c); else threads.push(c);
+    });
+    if (!AUTHOR) {
+      var mine = localPending(b.id).filter(function (n) { return !seen[n.id]; });
+      saveLocalPending(b.id, mine);
+      mine.forEach(function (n) {
+        var p = { id: n.id, name: n.name, body: n.body, created_at: n.created_at, reply_to_name: n.reply_to_name, status: "pending", mine: true, replies: [] };
+        var top = n.parent_id && threads.filter(function (t) { return t.id === n.parent_id; })[0];
+        if (top) top.replies.push(p); else if (!n.parent_id) threads.push(p);
+      });
+    }
+    dana.sort(function (a, c) { return Date.parse(c.created_at) - Date.parse(a.created_at); });
+    return { dana: dana, threads: threads };
+  }
+
+  function modButtons(n) {
+    if (!AUTHOR || n.is_author) return "";
+    if (n.status === "pending") return '<button type="button" class="linkish" data-mod="approve" data-id="' + n.id + '">approve</button> · <button type="button" class="linkish" data-mod="reject" data-id="' + n.id + '">reject</button>';
+    return '<button type="button" class="linkish" data-mod="hide" data-id="' + n.id + '">hide</button>';
+  }
+  function noteHTML(n, top) {
+    var pending = n.status === "pending";
+    return '<article class="note' + (pending ? " pending" : "") + '" data-note="' + n.id + '">' + yarnBall(n.name) +
+      '<div class="nh"><span class="who">' + esc(n.name) + '</span>' + (n.is_author ? '<span class="author-tag">author</span>' : "") +
+      '<span class="ago" title="' + fullDate(n.created_at) + '">' + ago(n.created_at) + '</span></div>' +
+      '<div class="body-wrap"><p>' + (n.reply_to_name ? '<span class="at">@' + esc(n.reply_to_name) + '</span> ' : "") + textHTML(n.body) + '</p></div>' +
+      (pending && !AUTHOR ? '<div class="pending-tag">waiting for dana to read it ✎</div>' : "") +
+      '<div class="actions">' + (!pending ? '<button type="button" class="linkish" data-reply="' + n.id + '" data-top="' + top.id + '" data-name="' + esc(n.name) + '">reply</button>' : "") +
+        (modButtons(n) ? (!pending ? " · " : "") + modButtons(n) : "") +
+        (AUTHOR && n.is_author ? ' · <button type="button" class="linkish" data-edit="' + n.id + '">edit</button> · <button type="button" class="linkish" data-del="' + n.id + '">delete</button>' : "") +
+      '</div></article>';
+  }
+  function threadsHTML(t) {
+    if (!t.threads.length) return '<p class="empty"><span class="hand">no margin notes yet</span>Be the first to leave one.</p>';
+    return '<ol class="notes">' + t.threads.map(function (n) {
+      var reps = n.replies || [];
+      return '<li class="thread' + (reps.length ? " has-replies" : "") + '">' + noteHTML(n, n) +
+        (reps.length ? '<ol class="replies">' + reps.map(function (r) { return '<li>' + noteHTML(r, n) + '</li>'; }).join("") + '</ol>' : "") + '</li>';
     }).join("") + '</ol>';
+  }
+  function danaCardHTML(b, t) {
+    var entries = (t ? t.dana : []);
+    if (!b.review && !entries.length) return "";
+    return '<section class="review" aria-label="Dana\'s notes"><span class="tape" aria-hidden="true"></span><div class="card">' +
+      '<div class="hand">dana\'s notes</div>' + (b.review ? '<div class="rv">' + b.review + '</div>' : "") +
+      entries.map(function (n) {
+        return '<article class="dn-entry" data-note="' + n.id + '"><div class="when">' + fullDate(n.created_at) + (n.edited_at ? " · edited" : "") + '</div>' +
+          '<div class="dn-body"><p>' + textHTML(n.body) + '</p></div>' +
+          (AUTHOR ? '<div class="actions"><button type="button" class="linkish" data-edit="' + n.id + '">edit</button> · <button type="button" class="linkish" data-del="' + n.id + '">delete</button></div>' : "") +
+          '</article>';
+      }).join("") + '</div></section>';
   }
   function composerHTML(idp, placeholder, btn) {
     return '<div class="composer"><label class="sr" for="' + idp + '-body">Your note</label>' +
       '<textarea id="' + idp + '-body" rows="1" maxlength="2000" placeholder="' + esc(placeholder) + '"></textarea>' +
-      '<div class="row2"><label class="sr" for="' + idp + '-name">Your name</label>' +
-      '<input type="text" id="' + idp + '-name" maxlength="40" placeholder="your name" value="' + esc(savedName) + '">' +
-      '<button type="submit" class="pin">' + btn + '</button></div></div><p class="err" hidden></p>';
+      '<div class="row2">' + (AUTHOR ? '<span class="as-dana">as dana</span>' :
+        '<label class="sr" for="' + idp + '-name">Your name</label><input type="text" id="' + idp + '-name" maxlength="40" placeholder="your name" value="' + esc(savedName) + '">') +
+      '<label class="hp" aria-hidden="true">Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>' +
+      '<button type="submit" class="pin">' + btn + '</button></div></div><p class="err" role="alert" hidden></p>';
   }
   function autogrow(ta) { ta.addEventListener("input", function () { ta.style.height = "auto"; ta.style.height = Math.min(140, ta.scrollHeight) + "px"; }); }
 
+  function renderNotes(panel, b) {
+    var t = b.thread;
+    var dana = panel.querySelector(".dana-slot"), wrap = panel.querySelector(".notes-wrap"), count = panel.querySelector(".notes-head .count");
+    if (dana) dana.innerHTML = danaCardHTML(b, t);
+    if (!wrap) return;
+    if (!t) { wrap.innerHTML = '<div class="skeleton" aria-hidden="true"><i></i><i></i><i></i></div>'; return; }
+    wrap.innerHTML = threadsHTML(t);
+    if (count) count.textContent = t.threads.filter(function (n) { return n.status !== "pending"; }).length;
+  }
+
+  function loadThread(panel, b) {
+    if (b.staticNotes && !b.thread) b.thread = splitThread(b, b.staticNotes);
+    renderNotes(panel, b);
+    return api("/books/" + b.id + "/comments").then(function (j) {
+      AUTHOR = !!j.author;
+      b.thread = splitThread(b, j.comments || []);
+      b.noteCount = b.thread.threads.filter(function (n) { return n.status !== "pending"; }).length;
+      if (panel.isConnected) { renderNotes(panel, b); syncComposer(panel, b); }
+    }).catch(function (err) {
+      if (!b.thread) b.thread = splitThread(b, []);
+      if (!panel.isConnected) return;
+      renderNotes(panel, b);
+      var w = panel.querySelector(".notes-wrap");
+      w.insertAdjacentHTML("afterbegin", '<p class="notes-err">' + esc(err.message) + ' <button type="button" class="linkish" data-retry>retry</button></p>');
+    });
+  }
+
+  function syncComposer(panel, b) {
+    var f = panel.querySelector("form.compose"); if (!f) return;
+    var wasAuthor = f.dataset.author === "1";
+    if (wasAuthor === AUTHOR && f.dataset.ready) return;
+    f.innerHTML = composerHTML("note", AUTHOR ? "add to dana's notes…" : "leave a note in the margin…", AUTHOR ? "add" : "pin it") +
+      '<p class="fine">' + (AUTHOR ? "your notes appear right away, pinned at the top" : "notes appear once dana approves them · be kind") + '</p>';
+    f.dataset.author = AUTHOR ? "1" : "0"; f.dataset.ready = "1";
+    autogrow(f.querySelector("textarea"));
+  }
+
+  function submitNote(form, b, panel, parentId, openedAt) {
+    var ta = form.querySelector("textarea"), nameEl = form.querySelector('input[id$="-name"]'), err = form.querySelector(".err"), btn = form.querySelector(".pin");
+    var body = ta.value.trim(), name = nameEl ? nameEl.value.trim() : "dana";
+    if (!body || !name) { err.textContent = !body ? "Write something first." : "Add a name so Dana knows who it's from."; err.hidden = false; return; }
+    err.hidden = true; btn.disabled = true;
+    if (!form.dataset.key) form.dataset.key = uuid(); // same key on retry → never posted twice
+    api("/books/" + b.id + "/comments", { method: "POST", body: {
+      name: name, body: body, parent_id: parentId || null, client_key: form.dataset.key,
+      website: form.querySelector('input[name="website"]').value, elapsed_ms: Date.now() - openedAt
+    } }).then(function (j) {
+      btn.disabled = false; delete form.dataset.key;
+      if (!AUTHOR) rememberName(name);
+      ta.value = ""; ta.style.height = "auto";
+      var created = j.comment || { id: j.id, name: name, body: body, created_at: new Date().toISOString(), status: "pending", parent_id: parentId || null };
+      if (j.status === "pending" && j.id) {
+        var mine = localPending(b.id); mine.push({ id: j.id, name: name, body: body, parent_id: parentId || null, created_at: new Date().toISOString() }); saveLocalPending(b.id, mine);
+      }
+      if (!b.thread) b.thread = splitThread(b, []);
+      if (created.is_author && !created.parent_id) b.thread.dana.unshift(created);
+      else {
+        var n = Object.assign({ replies: [] }, created, { status: j.status });
+        if (parentId) { var top = b.thread.threads.filter(function (t) { return t.id === parentId || (t.replies || []).some(function (r) { return r.id === parentId; }); })[0]; if (top) top.replies.push(n); }
+        else b.thread.threads.push(n);
+      }
+      renderNotes(panel, b);
+      var el = panel.querySelector('[data-note="' + created.id + '"]');
+      if (el) {
+        el.scrollIntoView({ block: "nearest", behavior: reduceMotion.matches ? "auto" : "smooth" });
+        if (!reduceMotion.matches) el.animate([
+          { transform: "translateY(-14px) rotate(-2deg) scale(1.02)", opacity: 0 },
+          { transform: "translateY(3px) rotate(.5deg)", opacity: 1, offset: .65 },
+          { transform: "none", opacity: 1 }
+        ], { duration: 480, easing: "cubic-bezier(.3,.7,.4,1)" });
+      }
+      if (form.classList.contains("reply-form")) form.remove();
+      live.textContent = j.status === "approved" ? "Note added." : "Note pinned. It will appear publicly once Dana approves it.";
+    }, function (e) { btn.disabled = false; err.textContent = e.message; err.hidden = false; });
+  }
+
   function buildPanel(b) {
     var el = document.createElement("aside");
+    var openedAt = Date.now();
     el.className = "panel";
     el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-labelledby", "p-title");
     var when = b.month >= 0 ? (b.reading ? "started " : b.dnf ? "put down " : "read ") + MONTHS[b.month] + " " + b.year : "";
@@ -517,72 +680,125 @@
           (when ? '<span>' + when + '</span>' : "") + (b.pages ? '<span>' + b.pages + ' pages</span>' : "") +
           '<a href="' + esc(b.url) + '">goodreads ↗</a>' +
         '</div>' +
-        (b.review ? '<section class="review" aria-label="Dana\'s review"><span class="tape" aria-hidden="true"></span><div class="card">' +
-          '<div class="hand">dana\'s notes</div><div class="rv">' + b.review + '</div></div></section>' : "") +
+        '<div class="dana-slot">' + danaCardHTML(b, b.thread || (b.staticNotes ? splitThread(b, b.staticNotes) : null)) + '</div>' +
         (NOTES_API ?
-          '<div class="notes-head"><h3>Margin notes</h3><span class="count">' + approvedCount(b) + '</span></div>' +
-          '<div class="notes-wrap">' + notesListHTML(b) + '</div>' :
+          '<div class="notes-head"><h3>Margin notes</h3><span class="count">' + approvedCount(b) + '</span></div><div class="notes-wrap"></div>' :
           '<p class="notes-soon"><span class="hand">margin notes are coming soon</span>You\'ll be able to leave a note on any book here.</p>') +
       '</div>' +
-      (NOTES_API ? '<form class="compose" novalidate>' + composerHTML("note", "leave a note in the margin…", "pin it") +
-        '<p class="fine">notes appear once dana approves them · be kind</p></form>' : "");
+      (NOTES_API ? '<form class="compose" novalidate></form>' : "");
 
     el.querySelector(".close").addEventListener("click", function () { closeBook(); });
     if (!NOTES_API) return el;
-    autogrow(el.querySelector("#note-body"));
-    el.querySelector(".compose").addEventListener("submit", function (e) {
+    syncComposer(el, b);
+    loadThread(el, b);
+
+    el.addEventListener("submit", function (e) {
       e.preventDefault();
-      var body = el.querySelector("#note-body"), name = el.querySelector("#note-name"), err = el.querySelector(".compose .err");
-      if (!body.value.trim() || !name.value.trim()) { err.textContent = !body.value.trim() ? "Write something first." : "Add a name so Dana knows who it's from."; err.hidden = false; return; }
-      err.hidden = true;
-      var n = { id: Date.now(), name: name.value.trim(), body: body.value.trim(), ago: "just now", replies: [], pending: true };
-      b.notes.push(n); rememberName(n.name);
-      body.value = ""; body.style.height = "auto";
-      refreshNotes(el, b, n.id);
+      var f = e.target;
+      submitNote(f, b, el, f.classList.contains("reply-form") ? +f.dataset.parent : null, openedAt);
     });
     el.addEventListener("click", function (e) {
-      var r = e.target.closest("[data-reply]"); if (!r) return;
-      openReply(el, b, +r.dataset.reply, r.dataset.name, r.closest(".note"));
+      var t;
+      if ((t = e.target.closest("[data-retry]"))) { t.parentNode.remove(); loadThread(el, b); return; }
+      if ((t = e.target.closest("[data-reply]"))) {
+        var existing = el.querySelector(".reply-form"); if (existing) existing.remove();
+        var f = document.createElement("form");
+        f.className = "reply-form"; f.noValidate = true; f.style.gridColumn = "2"; f.dataset.parent = t.dataset.reply;
+        f.innerHTML = composerHTML("reply", "reply to " + t.dataset.name + "…", "pin reply");
+        t.closest(".note").appendChild(f);
+        var ta = f.querySelector("textarea"); autogrow(ta); ta.focus();
+        return;
+      }
+      if ((t = e.target.closest("[data-mod]"))) {
+        var id = +t.dataset.id, action = t.dataset.mod;
+        api("/books/comments/" + id + "/moderate", { method: "POST", body: { action: action } }).then(function () {
+          b.thread.threads = b.thread.threads.filter(function (n) {
+            if (n.id === id) { if (action === "approve") { n.status = "approved"; return true; } return false; }
+            n.replies = (n.replies || []).filter(function (r) { if (r.id === id) { if (action === "approve") { r.status = "approved"; return true; } return false; } return true; });
+            return true;
+          });
+          renderNotes(el, b); refreshAuthorBar();
+          live.textContent = action === "approve" ? "Note approved." : action === "reject" ? "Note rejected." : "Note hidden.";
+        }, function (err) { live.textContent = err.message; });
+        return;
+      }
+      if ((t = e.target.closest("[data-del]"))) {
+        if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "delete? tap again"; return; }
+        var did = +t.dataset.del;
+        api("/books/comments/" + did, { method: "DELETE" }).then(function () {
+          b.thread.dana = b.thread.dana.filter(function (n) { return n.id !== did; });
+          b.thread.threads.forEach(function (n) { n.replies = (n.replies || []).filter(function (r) { return r.id !== did; }); });
+          renderNotes(el, b); live.textContent = "Note deleted.";
+        }, function (err) { live.textContent = err.message; });
+        return;
+      }
+      if ((t = e.target.closest("[data-edit]"))) {
+        var eid = +t.dataset.edit, box = el.querySelector('[data-note="' + eid + '"] p');
+        var all = b.thread.dana.concat.apply(b.thread.dana, b.thread.threads.map(function (n) { return n.replies || []; }));
+        var note = all.filter(function (n) { return n.id === eid; })[0]; if (!box || !note) return;
+        var ed = document.createElement("form"); ed.className = "edit-form";
+        ed.innerHTML = '<div class="composer"><textarea rows="3" maxlength="2000">' + esc(note.body) + '</textarea><div class="row2"><button type="button" class="linkish" data-cancel>cancel</button><button type="submit" class="pin">save</button></div></div><p class="err" role="alert" hidden></p>';
+        box.replaceWith(ed);
+        ed.addEventListener("submit", function (ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          api("/books/comments/" + eid, { method: "PATCH", body: { body: ed.querySelector("textarea").value } }).then(function (j) {
+            note.body = j.comment.body; note.edited_at = j.comment.edited_at; renderNotes(el, b); live.textContent = "Saved.";
+          }, function (err) { var p = ed.querySelector(".err"); p.textContent = err.message; p.hidden = false; });
+        });
+        ed.querySelector("[data-cancel]").addEventListener("click", function () { renderNotes(el, b); });
+      }
     });
     return el;
   }
 
-  function findTop(b, id) {
-    for (var i = 0; i < b.notes.length; i++) {
-      if (b.notes[i].id === id) return b.notes[i];
-      for (var j = 0; j < b.notes[i].replies.length; j++) if (b.notes[i].replies[j].id === id) return b.notes[i];
+  /* ───────────── author sign-in bar (bottom of the page) ───────────── */
+  var authorBar = document.getElementById("authorBar");
+  function refreshAuthorBar() {
+    if (!authorBar || !NOTES_API) return;
+    if (!AUTHOR) {
+      authorBar.innerHTML = '<button type="button" class="linkish" id="signinOpen">sign in</button>';
+      return;
     }
-    return null;
+    authorBar.innerHTML = 'signed in as dana · <span id="pendingInfo"></span><button type="button" class="linkish" id="signout">sign out</button>';
+    api("/books/comments/pending").then(function (j) {
+      var n = j.comments.length, info = document.getElementById("pendingInfo");
+      if (!info) return;
+      if (!n) { info.innerHTML = "no notes waiting · "; return; }
+      var ids = {}; j.comments.forEach(function (c) { ids[c.book_id] = (ids[c.book_id] || 0) + 1; });
+      info.innerHTML = n + " note" + (n > 1 ? "s" : "") + " waiting: " + Object.keys(ids).map(function (id) {
+        var bk = BOOKS[id]; return '<a href="#b-' + id + '" data-open="' + id + '">' + esc(bk ? bk.title : id) + (ids[id] > 1 ? " (" + ids[id] + ")" : "") + '</a>';
+      }).join(", ") + " · ";
+    }).catch(function () {});
   }
-  function openReply(panel, b, noteId, name, noteEl) {
-    var existing = panel.querySelector(".reply-form"); if (existing) existing.remove();
-    var f = document.createElement("form");
-    f.className = "reply-form"; f.noValidate = true; f.style.gridColumn = "2";
-    f.innerHTML = composerHTML("reply", "reply to " + name + "…", "pin reply");
-    noteEl.appendChild(f);
-    var ta = f.querySelector("textarea"); autogrow(ta); ta.focus();
-    f.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var body = ta.value.trim(), nm = f.querySelector("input").value.trim(), err = f.querySelector(".err");
-      if (!body || !nm) { err.textContent = !body ? "Write something first." : "Add a name so Dana knows who it's from."; err.hidden = false; return; }
-      var top = findTop(b, noteId); if (!top) return;
-      var r = { id: Date.now(), name: nm, body: body, ago: "just now", pending: true, replyTo: top.id === noteId ? null : name };
-      top.replies.push(r); rememberName(nm);
-      refreshNotes(panel, b, r.id);
+  if (authorBar && NOTES_API) {
+    authorBar.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t.id === "signinOpen") {
+        authorBar.innerHTML = '<form id="signinForm" class="signin" novalidate><label for="signinEmail">your email</label> ' +
+          '<input type="email" id="signinEmail" autocomplete="email" required> <button type="submit" class="pin">send sign-in link</button></form>';
+        document.getElementById("signinEmail").focus();
+      } else if (t.id === "signout") {
+        api("/auth/logout", { method: "POST" }).then(function () { AUTHOR = false; refreshAuthorBar(); live.textContent = "Signed out."; });
+      } else if (t.dataset && t.dataset.open) {
+        e.preventDefault(); openBook(t.dataset.open);
+      }
     });
-  }
-  function refreshNotes(panel, b, newId) {
-    panel.querySelector(".notes-wrap").innerHTML = notesListHTML(b);
-    var el = panel.querySelector('[data-note="' + newId + '"]');
-    if (el) {
-      el.scrollIntoView({ block: "nearest", behavior: reduceMotion.matches ? "auto" : "smooth" });
-      if (!reduceMotion.matches) el.animate([
-        { transform: "translateY(-14px) rotate(-2deg) scale(1.02)", opacity: 0 },
-        { transform: "translateY(3px) rotate(.5deg)", opacity: 1, offset: .65 },
-        { transform: "none", opacity: 1 }
-      ], { duration: dur(480), easing: "cubic-bezier(.3,.7,.4,1)" });
-    }
-    document.getElementById("live").textContent = "Note pinned. It will appear publicly once Dana approves it.";
+    authorBar.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var email = document.getElementById("signinEmail").value.trim();
+      if (!email) return;
+      api("/auth/request", { method: "POST", body: { email: email } }).then(function (j) {
+        authorBar.textContent = j.message || "Check your inbox.";
+      }, function (err) { authorBar.textContent = err.message; });
+    });
+    api("/me").then(function (j) {
+      AUTHOR = !!j.author; refreshAuthorBar();
+      if (AUTHOR && location.hash === "#signed-in") { live.textContent = "You're signed in."; try { history.replaceState(null, "", location.pathname); } catch (err) {} }
+    }).catch(function () { refreshAuthorBar(); });
+    api("/books/comments/counts").then(function (c) {
+      Object.keys(BOOKS).forEach(function (id) { BOOKS[id].noteCount = c[id] || 0; });
+      if (!openId) renderShelves();
+    }).catch(function () {});
   }
 
   /* ───────────── filters + deep links ───────────── */
