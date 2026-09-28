@@ -479,8 +479,10 @@
 
   function api(path, opts) {
     opts = opts || {};
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = ctrl && setTimeout(function () { ctrl.abort(); }, 20000); // never leave "pin it" hanging
     return fetch(NOTES_API + path, {
-      method: opts.method || "GET", credentials: "include",
+      method: opts.method || "GET", credentials: "include", signal: ctrl ? ctrl.signal : undefined,
       headers: opts.body ? { "Content-Type": "application/json" } : undefined,
       body: opts.body ? JSON.stringify(opts.body) : undefined
     }).then(function (r) {
@@ -488,7 +490,9 @@
         if (!r.ok) { var e = new Error((j.detail && j.detail.message) || "Something went wrong. Try again in a bit."); e.status = r.status; throw e; }
         return j;
       });
-    }, function () { throw new Error("Couldn't reach the notes right now. Try again in a bit."); });
+    }, function (e) {
+      throw new Error(e && e.name === "AbortError" ? "The notes server is taking too long. Try again in a minute." : "Couldn't reach the notes right now. Try again in a bit.");
+    }).finally(function () { if (timer) clearTimeout(timer); });
   }
   function uuid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
