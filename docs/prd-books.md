@@ -3,10 +3,11 @@
 | | |
 |---|---|
 | **Owner** | Dana Adylova |
-| **Status** | Draft v3 (all open questions resolved) |
+| **Status** | Draft v4 (visual direction set from the interactive prototype) |
 | **Created** | 2026-09-28 · **Updated** 2026-09-28 |
 | **Site** | https://danaadylova.com (Eleventy 3 → GitHub Pages via `.github/workflows/deploy.yml`) |
-| **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelf `read` + shelf [`did-not-finish`](https://www.goodreads.com/review/list/135558742?shelf=did-not-finish) (feed confirmed public) |
+| **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelves `read`, `currently-reading` + [`did-not-finish`](https://www.goodreads.com/review/list/135558742?shelf=did-not-finish) (feed confirmed public) |
+| **Prototype** | https://claude.ai/artifact/2eoFCUqNNhRmdKgKBPn1Ak (v4, sample data) |
 | **Comments backend** | existing unraveled.makes FastAPI + Postgres service (see §7) |
 
 ---
@@ -28,10 +29,10 @@ The book list comes from Goodreads automatically. **Reviews are written on my si
 
 ### Non-goals (v1)
 
-- Showing `currently-reading` / `to-read` shelves (possible v2).
+- Showing the `to-read` shelf (possible v2).
 - Syncing my site reviews back to Goodreads, or importing Goodreads review text.
 - Visitor accounts, likes/reactions, or deeply nested reply trees (replies are one level deep, see §7.2).
-- Search and filter UI beyond grouping by year.
+- Search, and filters beyond **all / loved / unfinished** (§6.0).
 
 ## 3. Users & stories
 
@@ -72,6 +73,7 @@ Fields used per `<item>`:
 - **Undated books are excluded.** A book with no `user_read_at` is skipped. There's no "undated" shelf and no fallback to `user_date_added`. The build log reports how many were skipped, so they can be fixed on Goodreads if wanted.
 - **Re-reads:** RSS exposes only the latest read date, so a re-read appears once, in its latest year. This is accepted.
 - **DNF books:** my DNF shelf is **`did-not-finish`**. The fetcher always pulls `?shelf=did-not-finish` as well as `?shelf=read` and merges the two by `book_id`, with `dnf: true` on anything from the DNF shelf. This works whether `did-not-finish` is an exclusive shelf or a tag on books that are also in `read`. As a second check, any `read` item whose `user_shelves` includes `did-not-finish` is also marked DNF. The shelf name lives in `src/_data/books.config.js`. DNF books still need a date to be shown. They use `user_read_at`, or for an exclusive DNF shelf, `user_date_added` as the "stopped" date. That is the only case where the added date is used.
+- **Currently reading:** the fetcher also pulls `?shelf=currently-reading` for the "on the nightstand" shelf (§6.0). The RSS has no start date, so `user_date_added` is shown as "started". These books aren't grouped by year, and once a book moves to `read` it appears in its year instead.
 - **Pagination:** fetch `page=1,2,3…` until a page returns zero items, with a hard cap of 50 pages.
 - **Politeness:** the fetch runs only at build time, about once a day, with an honest `User-Agent` (`danaadylova.com-books/1.0`). The site never fetches from visitors' browsers.
 
@@ -130,6 +132,46 @@ Fields used per `<item>`:
 
 ## 6. Experience design: the shelf
 
+### 6.0 Visual direction (decided from prototype v4)
+
+Direction: **a warm, precise reading room.** The coziness comes from material and light, and the contemporary feel comes from restraint: one display serif, one accent, soft tinted depth and generous space. Where this section conflicts with details further down (plank styling, DNF leaning, the old panel look), this section wins.
+
+**Page structure (top to bottom)**
+1. `# books` heading + mono subtitle (`44 books · updated … · via goodreads`).
+2. **Filter** segmented control: `all · ★ loved · unfinished`, with counts. Non-matching books **dim** to about 20% opacity and desaturate instead of disappearing, so the shelf never re-flows. "Loved" means 4★ and 5★. A small legend explains the gold stars and flat books.
+3. **"on the nightstand"**: a shelf of books I'm currently reading, standing **face-out** (covers visible, tilted ±1.5°), each with a terra ribbon bookmark, plus a small ceramic **mug with animated steam** at the end. If nothing is on the shelf: *"nothing on the nightstand right now"*. Clicking a book lifts it and grows it to center (no turn, since it's already facing out). The panel shows a `reading now` pill and "started {month}".
+4. **Year shelves**, newest first.
+
+**Shelves**
+- Each year is a **recessed built-in shelf** (14px radius): a back wall slightly darker than the page with an inner top shadow, and planks whose front lip catches the light.
+- A soft warm **lamp glow** follows the pointer across the shelf (radial gradient, CSS custom properties, no layout cost).
+- **Unfinished (DNF) books lie flat** in a small pile at the end of the year's last shelf, alternately offset. On hover they slide out about 10px. When opened, they rotate upright while flying out, then turn to the cover. Years without DNFs end with a small terracotta ceramic **bookend** instead.
+- **Spines** use one of three type treatments (display serif, mono caps, spaced grotesk caps), seeded per book, with a faint cloth texture, like books from different publishers. The same family is used on the generated fallback cover.
+- **Ratings on the spine:** 4★ = a small **gold-foil star** near the head; 5★ = foil star + **foil head/tail bands**, and a soft shine runs down the spine on hover. The panel shows stars in brass.
+
+**Type**
+- **Year numerals:** Fraunces italic with its `SOFT 100` / `WONK 1` axes (a quirky, cozy serif), about 60px. Digits get small seeded rotations and baseline offsets, and wiggle the other way on hover. The last digit is in terra, with a **wavy yarn underline** (CSS mask). The nightstand heading uses the same treatment in words.
+- **Instrument Serif** for book titles in the panel, the hover label, and my review text.
+- Space Mono + Inter remain for everything else, and Caveat only for the "dana's notes" label, the composer placeholder and the pending tag.
+
+**Opening a book**
+- The room **dims hard** to a warm dusk (about 80% in day mode, 88% in evening) with a slight blur and a pool of warm light behind the cover.
+- The cover floats gently (±5px, 3s) over a soft **cast shadow**. A 5★ cover catches a single light glint when it lands.
+
+**Reading panel**
+- A clean rounded sheet (18px radius, tinted soft shadow; a bottom sheet on mobile) with a close button. Title is in Instrument Serif about 34px, then author, then a meta row (stars / `didn't finish` / `reading now`, date, pages, goodreads ↗).
+- **My review** is the one decorative moment: a softly lined card with **washi tape**, the Caveat label "dana's notes", and the body set in Instrument Serif on the lines.
+- **Margin notes:** a modern thread with **yarn-ball avatars** (color hashed from the name). Replies are indented and joined by a dashed "yarn" line, with an `author` badge on my replies. Pending notes are dashed-outline with *"waiting for dana to read it ✎"*.
+- **Composer:** a rounded field that grows as you type, a pill name input, and a **pin it** button. New notes drop in with a small "pinned" settle.
+
+**Evening mode**
+- A near-black **charcoal** palette (`#0e0d0c` page, `#161413` shelf wall, `#171514` panel), *not* brown, with warm lamplight and the same accents.
+- It follows the visitor's system dark-mode preference. A day/evening toggle is optional. This is the only dark mode on the site for now, so decide at build time whether it stays scoped to `/books`.
+
+**Atmosphere:** a very faint paper grain over the page (SVG turbulence at about 0.3–0.45 opacity).
+
+**Prototype-only controls, not shipped:** the "prototype" strip, the slow-motion toggle (already removed), and "replay shelf drop".
+
 ### 6.1 The shelf
 
 - Each year is a **shelf**: a row of books standing upright on a plank. The plank should be restrained and on-brand, not skeuomorphic wood: a 10–12px bar in `--card` with a `--card-border` top edge, a 3px offset shadow like `.card`, and a soft contact shadow under the books.
@@ -139,7 +181,7 @@ Fields used per `<item>`:
 - **Spine markers (small, quiet):**
   - **Reviewed by me:** a thin **terra ribbon bookmark** hangs from the top of the spine.
   - **Has visitor notes:** a tiny cream **paper slip** peeks out of the top edge. Counts load after page load (§7.3), so this appears with a soft fade.
-  - **DNF:** the book **leans** against its neighbor (`rotate(-4deg)` from the base corner), and a short folded bookmark sticks out halfway down the fore-edge, as if "left off here". The spine label stays readable.
+  - **DNF:** the book **lies flat** in a small pile at the end of its year's shelf (superseded the "leaning" idea, see §6.0). When opened, its cover shows a paper bookmark sticking out of the fore-edge reading "left off here".
 - **Layout:** the site column is `46rem` wide, so a year with many books wraps onto more planks (a bookcase), with no horizontal scroll on desktop.
 - **Entrance:** when a shelf enters the viewport (IntersectionObserver), its books drop in with a staggered settle (about 20ms stagger, 400ms cap). This runs once.
 
@@ -359,6 +401,14 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 14. Fully usable with keyboard only and VoiceOver, including posting a note. axe-core reports no serious or critical issues.
 15. Works in the latest Safari (macOS and iOS), Chrome and Firefox. `/books/#b-{id}` opens that book directly.
 
+### 11a. Visual acceptance (from §6.0)
+
+- A "on the nightstand" shelf shows every `currently-reading` book face-out above the year shelves.
+- DNF books lie flat in a pile at the end of their year and open by rotating upright, then turning.
+- 4★ spines show a foil star and 5★ spines a foil star + bands. The "loved" filter dims everything else without moving anything.
+- Evening mode is charcoal, not brown, and turns on automatically when the system is in dark mode.
+- Opening a book dims the page to at least 80% with a warm pool of light behind the cover.
+
 ## 12. Rollout
 
 1. ~~Check that the feed is public~~ ✅ confirmed 2026-09-28.
@@ -383,6 +433,13 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 | 9 | DNF shelf name | `did-not-finish` |
 | 10 | Moderation | **Hold for approval.** Nothing public until Dana approves. |
 | 11 | Replies | Yes: visitors can reply to each other, one level deep, with `@name` for replies to replies |
+| 12 | DNF presentation | Lying **flat** in a pile at the end of the shelf |
+| 13 | 4★/5★ highlight | Foil star (4★), foil star + bands + hover shine (5★), plus a **loved** filter |
+| 14 | Currently reading | New **"on the nightstand"** shelf at the top, face-out covers + mug |
+| 15 | Evening mode | Yes, near-black charcoal (not brown), following system dark mode |
+| 16 | Year numerals | Quirky, cozy Fraunces (SOFT/WONK) with tilted digits and a wavy underline |
+| 17 | Opened-book backdrop | Much dimmer (about 80–88%) with a warm spotlight |
+| 18 | Slow-motion toggle | **Removed.** It was a prototype review tool and won't ship. |
 
 ## 14. Open questions
 
