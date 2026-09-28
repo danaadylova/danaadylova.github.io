@@ -17,7 +17,7 @@ const sample = snap.years.flatMap((y) => y.books).slice(0, 5)
   .map((b) => `${b.title} — ${b.author} · ${b.dnf ? "dnf" : "★".repeat(b.rating) || "unrated"} · ${String(b.when).slice(0, 10)}`);
 
 const notices = [
-  ["Feeds", `read=${fc.read} · currently-reading=${fc.reading} · ${dnfFeeds}`],
+  ["Feeds", `read=${fc.read} · currently-reading=${fc.reading} · ${dnfFeeds} · snapshot taken ${snap.fetchedAt} (${Math.round((Date.now() - Date.parse(snap.fetchedAt)) / 60000)} min ago; old = Goodreads failed and the cache was used)`],
   ["Library", `${snap.total} books in ${snap.years.length} years · ${snap.lovedTotal} loved · ${snap.dnfTotal} unfinished · ${snap.reading.length} currently reading`],
   ["Per year", years],
   ["Covers", `${withCover} of ${metas.length} books have a cover image`],
