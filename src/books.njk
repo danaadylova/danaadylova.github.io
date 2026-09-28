@@ -1,0 +1,51 @@
+---
+layout: base.njk
+title: books
+permalink: /books/
+eleventyExcludeFromCollections: true
+description: Everything Dana has read, on a shelf — pulled from Goodreads.
+pageClass: page-books
+extraCss: /css/books.css
+extraJs: /js/books.js
+extraFonts: https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Instrument+Serif:ital@0;1&display=swap
+---
+{#- Shelf UI: src/js/books.js renders #shelves from #books-data. Design: docs/prd-books.md §6.0. -#}
+<h1 data-typed>books</h1>
+<p class="subtitle">{{ books.total }} books · updated {{ books.fetchedAt | gdate | lower }} · via goodreads</p>
+
+<div class="tools">
+  <div class="seg" role="group" aria-label="Show" id="filters">
+    <button type="button" data-f="all" aria-pressed="true">all <span class="n">{{ books.total }}</span></button>
+    <button type="button" data-f="loved" aria-pressed="false"><span class="star" aria-hidden="true">★</span> loved <span class="n">{{ books.lovedTotal }}</span></button>
+    <button type="button" data-f="dnf" aria-pressed="false">unfinished <span class="n">{{ books.dnfTotal }}</span></button>
+  </div>
+  <span class="legend"><span><i></i>4★</span><span><i></i><b></b>5★</span><span>lying flat = didn't finish</span></span>
+</div>
+<nav class="jump" id="jump" aria-label="Jump to year">
+  <span>jump to</span>{% if books.reading | length %}<a href="#ynow">reading</a>{% endif %}
+  {%- for y in books.years %}<a href="#y{{ y.year }}">{{ y.year }} <span class="n">{{ y.books | length }}</span></a>{% endfor %}
+</nav>
+
+<div id="shelves"></div>
+<p class="author-bar" id="authorBar"></p>
+
+{#- Without JavaScript: a plain grid of covers. -#}
+{%- macro card(b) -%}
+<li>
+  <a href="{{ b.url }}">
+    {%- if b.cover %}<img src="{{ b.cover }}.jpg" alt="{{ b.title }}" width="{{ b.coverWidth }}" height="{{ b.coverHeight }}" loading="lazy" decoding="async">
+    {%- else %}<span style="display:block;aspect-ratio:2/3;background:{{ b.color }};color:{{ b.textColor }};padding:.4rem">{{ b.title }}</span>{% endif -%}
+  </a>
+  {{ b.title }}<br><span class="bk-m">{{ b.author }} · {% if b.reading %}reading{% elif b.dnf %}dnf{% elif b.rating %}{% for i in range(0, b.rating) %}★{% endfor %}{% endif %}</span>
+</li>
+{%- endmacro %}
+<div class="books-fallback">
+  {% if books.reading | length %}<h2>currently reading</h2>
+  <ul class="bk-grid">{% for b in books.reading %}{{ card(b) }}{% endfor %}</ul>{% endif %}
+  {% for y in books.years %}<h2>{{ y.year }}</h2>
+  <ul class="bk-grid">{% for b in y.books %}{{ card(b) }}{% endfor %}</ul>{% endfor %}
+</div>
+
+<div class="hover-label" id="hoverLabel" aria-hidden="true"><span class="ht"></span><span class="ha"></span></div>
+<div class="sr" aria-live="polite" id="live"></div>
+<script type="application/json" id="books-data">{{ books.payload | safe }}</script>
