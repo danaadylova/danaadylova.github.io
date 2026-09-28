@@ -485,6 +485,8 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 | Branch check workflow (build + report, **no deploy**) | `.github/workflows/books-data-check.yml` |
 | Daily rebuild + cache | `.github/workflows/deploy.yml` (cron `17 13 * * *`) |
 
+**Step 3 — shelf UI: built** on the same branch. `/books` is now the real bookshelf, ported from prototype v9: `src/books.njk`, `src/css/books.css`, `src/js/books.js`. It has real cover images on the 3D covers and face-out books, cover-shaped books, evening mode following the system setting, and a no-JS cover grid. The **/books tab is in the header nav** and `books/` is in the home `ls`. `base.njk` gained `pageClass` / `extraCss` / `extraJs` / `extraFonts` front-matter hooks. **Margin notes show "coming soon"** until the notes API (step 5) exists: `notesApi` in `lib/books/config.js`. Reviews load from `src/reviews/*.md` (see its README). A preview with real data is published as a private Claude artifact.
+
 **Change from §4.2–4.4:** the last good snapshot and processed covers live in `.cache/books/` and are carried between CI runs with `actions/cache`, instead of a committed `books.cache.json`. That keeps bot commits out of the repo. Fallback order: live Goodreads → cached snapshot → build fails with a "is the shelf public?" message. For local work without network, use `npm run serve:offline` (sample data).
 
 **First run against real data (2026-09-28, run 36476797453):**
