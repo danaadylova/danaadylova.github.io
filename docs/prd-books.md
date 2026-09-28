@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Owner** | Dana Adylova |
-| **Status** | Draft v2 (decisions from review folded in) |
+| **Status** | Draft v3 (all open questions resolved) |
 | **Created** | 2026-09-28 · **Updated** 2026-09-28 |
 | **Site** | https://danaadylova.com (Eleventy 3 → GitHub Pages via `.github/workflows/deploy.yml`) |
-| **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelf `read` (+ DNF shelf, see §4.1) |
+| **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelf `read` + shelf [`did-not-finish`](https://www.goodreads.com/review/list/135558742?shelf=did-not-finish) (feed confirmed public) |
 | **Comments backend** | existing unraveled.makes FastAPI + Postgres service (see §7) |
 
 ---
@@ -21,7 +21,7 @@ The book list comes from Goodreads automatically. **Reviews are written on my si
 
 1. **No manual upkeep of the list.** Finishing a book on Goodreads makes it show up on the site within about a day, with nothing to commit.
 2. **My own reviews, my own place.** I can write reviews that live on my site, in Markdown, independent of Goodreads.
-3. **Conversation.** Visitors can leave notes on a book with no account needed, and I'm notified and can moderate.
+3. **Conversation.** Visitors can leave notes on a book and reply to each other with no account needed. Nothing appears publicly until I approve it.
 4. **Delight.** The shelf should feel tactile and look good: smooth 60 fps motion, physically believable, and the comment panel should feel warm and cozy.
 5. **On-brand.** It should match the digital-garden look (paper `#fbfaf4` dot grid, Space Mono + Inter, terra/teal accents, 3px offset card shadows) and the `~/dana $` terminal voice.
 6. **Fast and accessible.** Full keyboard and screen-reader support, respect for `prefers-reduced-motion`, and good behavior on phones.
@@ -30,18 +30,18 @@ The book list comes from Goodreads automatically. **Reviews are written on my si
 
 - Showing `currently-reading` / `to-read` shelves (possible v2).
 - Syncing my site reviews back to Goodreads, or importing Goodreads review text.
-- Visitor accounts, likes/reactions, or nested reply trees (one level of threading only, see §7.2).
+- Visitor accounts, likes/reactions, or deeply nested reply trees (replies are one level deep, see §7.2).
 - Search and filter UI beyond grouping by year.
 
 ## 3. Users & stories
 
 - **Visitor:** "I want to browse what Dana has read, year by year, pick up a book, and see what she thought of it."
-- **Visitor with an opinion:** "I want to leave a short note on a book, like 'this one wrecked me too', without making an account."
+- **Visitor with an opinion:** "I want to leave a short note on a book, like 'this one wrecked me too', or reply to someone else's note, without making an account."
 - **Visitor on a phone:** "I want to tap a book to see its cover and read the notes in a sheet that slides up."
 - **Keyboard / screen-reader visitor:** "I want to tab through books, hear the title, author, year and whether it was finished, open a book, and read or post comments."
 - **Dana (reading):** "I mark a book read or DNF on Goodreads and forget about it; the site catches up on its own."
 - **Dana (reviewing):** "I write a review as a Markdown file, maybe drafted in Obsidian. It shows up pinned at the top of that book's panel."
-- **Dana (moderating):** "I get an email when someone comments, and can hide a comment with one click."
+- **Dana (moderating):** "I get an email when someone comments, and approve or reject it with one click. Nothing goes live without me."
 
 ## 4. Data
 
@@ -71,19 +71,11 @@ Fields used per `<item>`:
 
 - **Undated books are excluded.** A book with no `user_read_at` is skipped. There's no "undated" shelf and no fallback to `user_date_added`. The build log reports how many were skipped, so they can be fixed on Goodreads if wanted.
 - **Re-reads:** RSS exposes only the latest read date, so a re-read appears once, in its latest year. This is accepted.
-- **DNF books:** Goodreads has no built-in DNF status. Readers mark it with a custom shelf. The fetcher supports both common setups:
-  1. A DNF **tag shelf** on books also in `read`. Detected when `user_shelves` contains a shelf whose name matches `/^(dnf|did-not-finish|abandoned)$/i`.
-  2. A separate **exclusive shelf**. The fetcher also pulls `?shelf=<dnf-shelf-name>` and merges those books in with `dnf: true`.
-
-  The DNF shelf name is configurable in `src/_data/books.config.js` (default `dnf`). DNF books still need a date to be shown. They use `user_read_at`, or for an exclusive DNF shelf, `user_date_added` as the "stopped" date. That is the only case where the added date is used.
+- **DNF books:** my DNF shelf is **`did-not-finish`**. The fetcher always pulls `?shelf=did-not-finish` as well as `?shelf=read` and merges the two by `book_id`, with `dnf: true` on anything from the DNF shelf. This works whether `did-not-finish` is an exclusive shelf or a tag on books that are also in `read`. As a second check, any `read` item whose `user_shelves` includes `did-not-finish` is also marked DNF. The shelf name lives in `src/_data/books.config.js`. DNF books still need a date to be shown. They use `user_read_at`, or for an exclusive DNF shelf, `user_date_added` as the "stopped" date. That is the only case where the added date is used.
 - **Pagination:** fetch `page=1,2,3…` until a page returns zero items, with a hard cap of 50 pages.
 - **Politeness:** the fetch runs only at build time, about once a day, with an honest `User-Agent` (`danaadylova.com-books/1.0`). The site never fetches from visitors' browsers.
 
-**Is the read shelf public? (unknown, so check first)**
-
-The whole feature depends on this. The quickest check: open this URL in a **private/incognito window**, where you're logged out:
-`https://www.goodreads.com/review/list_rss/135558742?shelf=read`
-If it shows XML with `<item>` entries, the shelf is public. If it's empty or asks you to sign in, go to Goodreads **Settings → Privacy** and set "Who can view my profile" to *anyone*, including non-Goodreads members. The build also fails loudly on the **first** run if the feed returns zero items and there's no cache, so a private shelf can't go unnoticed.
+**Feed access: confirmed public** (checked 2026-09-28 in a logged-out window). If the profile ever goes private, the build fails loudly when the feed returns zero items and there's no cache, and otherwise falls back to the cache.
 
 ### 4.2 Fetch at build time
 
@@ -234,35 +226,42 @@ The first 100 pages are a slog and then it absolutely **wrecks** you…
 CREATE TABLE book_comments (
   id          BIGSERIAL PRIMARY KEY,
   book_id     TEXT        NOT NULL,                 -- Goodreads book_id
-  parent_id   BIGINT      REFERENCES book_comments(id),  -- one level only
+  parent_id   BIGINT      REFERENCES book_comments(id),  -- set on replies; always a top-level note
   name        TEXT        NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
   body        TEXT        NOT NULL CHECK (char_length(body) BETWEEN 1 AND 2000),
   is_author   BOOLEAN     NOT NULL DEFAULT FALSE,   -- Dana replying in-thread
-  hidden      BOOLEAN     NOT NULL DEFAULT FALSE,
+  status      TEXT        NOT NULL DEFAULT 'pending'
+              CHECK (status IN ('pending','approved','rejected')),
+  reply_to_name TEXT,                               -- "@name" when replying to a reply
+  approved_at TIMESTAMPTZ,
   ip_hash     TEXT        NOT NULL,                 -- salted SHA-256, for rate limiting only
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX ON book_comments (book_id, created_at) WHERE NOT hidden;
+CREATE INDEX ON book_comments (book_id, created_at) WHERE status = 'approved';
+CREATE INDEX ON book_comments (status, created_at) WHERE status = 'pending';
 ```
 
 *Endpoints* (host e.g. `https://unraveled.danaadylova.com`, path prefix `/site/`):
 
 | Method & path | Purpose |
 |---|---|
-| `GET /site/books/comments/counts` | `{ book_id: count }` for spine markers. Cached 5 min. |
-| `GET /site/books/{book_id}/comments` | visible comments, oldest first, replies nested one level |
-| `POST /site/books/{book_id}/comments` | `{ name, body, parent_id?, website }` (where `website` is a honeypot) → the created comment |
-| `POST /site/books/comments/{id}/hide?token=…` | one-click hide from the notification email (HMAC-signed token) |
-| `POST /site/books/{book_id}/comments` + `Authorization: Bearer <DANA_TOKEN>` | posts as Dana, with `is_author = true` and an "author" badge |
+| `GET /site/books/comments/counts` | `{ book_id: count }` of **approved** notes, for spine markers. Cached 5 min. |
+| `GET /site/books/{book_id}/comments` | **approved** notes only, oldest first, replies nested under their top-level note |
+| `POST /site/books/{book_id}/comments` | `{ name, body, parent_id?, website }` (where `website` is a honeypot) → `202 { id, status: "pending" }` |
+| `GET /site/books/comments/{id}/moderate?action=approve\|reject&token=…` | one-click **approve** / **reject** from the notification email (HMAC-signed, single-use token). It shows a small confirmation page and uses POST on confirm, so email link scanners can't trigger it. |
+| `GET /site/books/comments/pending` + `Authorization: Bearer <DANA_TOKEN>` | queue of pending notes (backs an optional `/books/moderate` page) |
+| `POST /site/books/comments/{id}/(approve\|reject\|hide)` + Bearer | moderate from the queue; `hide` removes an already approved note |
+| `POST /site/books/{book_id}/comments` + `Authorization: Bearer <DANA_TOKEN>` | posts as Dana, with `is_author = true`, an "author" badge, and **auto-approved** |
 
 *Abuse & safety*
 
 - **CORS** is locked to `https://danaadylova.com` for the `/site/*` routes. The current app allows `*`, so these routes get their own policy.
 - **Honeypot field** + **minimum time-to-submit** (form open for at least 3s) + **rate limit**: 3 posts per 10 min and 20 per day per `ip_hash`.
 - **Plain text only.** Escaped on render, line breaks preserved, URLs auto-linked with `rel="nofollow ugc noopener"`. No HTML or Markdown from visitors.
-- **Moderation:** comments **publish immediately**. Each new comment emails Dana (reusing `send_email`) with the book, name, text, and a **hide** link. A config flag, `COMMENTS_REQUIRE_APPROVAL`, switches to hold-for-approval if spam becomes a problem. Cloudflare Turnstile is the next step after that.
+- **Moderation: hold for approval.** Every visitor note is saved as `pending` and is **not public** until approved. Each new note emails Dana (reusing `send_email`) with the book title, the note being replied to (if any), name, text, and **Approve** / **Reject** links. Pending notes older than 30 days are auto-rejected, with a digest line in the next email. Cloudflare Turnstile is the next step if spam still gets through the honeypot and rate limit.
+- **Replies:** anyone can reply to a note. The thread is **one level deep**: a reply to a reply attaches to the same top-level note, with `reply_to_name` shown as `↳ @name`. That keeps the narrow panel readable. Replies go through the same approval queue, and Dana's own replies are auto-approved.
 - **Privacy:** no email addresses are collected. The raw IP is never stored, only a salted hash. The form includes a one-line note saying notes are public.
-- `book_id` must match a book on the shelf. The API loads the list of valid IDs from the site's published `/books/ids.json`, refreshed hourly, so random IDs are rejected.
+- `book_id` must match a book on the shelf. The API loads the list of valid IDs from the site's published `/books/ids.json`, refreshed hourly, so random IDs are rejected. `parent_id` must belong to the same book and be approved.
 
 ### 7.3 Loading behavior
 
@@ -286,12 +285,13 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
   - The section label reads `margin notes (4)` in Caveat.
   - Each note is a small paper slip: name in Space Mono, relative date (`3 days ago`, with the full date on hover), then the body. Slips alternate a tiny rotation (±0.4°) so the stack feels hand-placed, not gridded.
   - Each commenter gets a small **yarn-ball avatar**: a 20px circle with two curved strokes, colored from a hash of their name within the site palette. There are no uploaded images.
+  - **Replies** sit indented under their note, joined by a thin dashed "thread" line (a yarn strand). A reply to a reply shows `↳ @name`. Each note has a small `reply` link that opens the compose form inline under that note.
   - **Dana's in-thread replies** get a terra left border and an `author` tag.
   - The empty state reads *"no margin notes yet — be the first to scribble something."*
 - **Compose form, at the bottom of the panel and sticky on desktop:**
   - A single textarea with placeholder `leave a note in the margin…`, a `name` field (remembered in `localStorage`), and a character counter that appears near the limit.
-  - The button reads `pin it` (terra, mono). On submit, the new note **slides in and gets "pinned"**: a tiny drop with an overshoot, then a settle.
-  - The fine print says *notes are public · be kind*.
+  - The button reads `pin it` (terra, mono). On submit, the new note **slides in and gets "pinned"**: a tiny drop with an overshoot, then a settle. It's shown **only to the author**, slightly faded, with a Caveat tag reading *"waiting for dana to read it ✎"*. It's kept in `localStorage` by id, so it survives a reload until approved or rejected. It isn't visible to anyone else.
+  - The fine print says *notes are public once approved · be kind*.
   - Errors are shown inline in the same voice, e.g. *"slow down a sec — try again in a few minutes"* for a rate limit.
 - **Scroll:** the panel scrolls on its own. The page behind it is scroll-locked while a book is open.
 - **Accessibility:** the panel is part of the book dialog. Headings are real `<h2>/<h3>`. Notes are a `<ol>` of `<article>`. The form has visible labels. A newly posted note is announced via `aria-live="polite"`.
@@ -335,10 +335,10 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 
 | File | Change |
 |---|---|
-| `app/site_comments.py` | **new**: `APIRouter` with the `/site/books/...` endpoints, rate limiting, honeypot, hide tokens |
+| `app/site_comments.py` | **new**: `APIRouter` with the `/site/books/...` endpoints, rate limiting, honeypot, approve/reject tokens, pending queue, 30-day auto-reject |
 | `app/db.py` | `book_comments` table creation + queries |
 | `app/main.py` | `include_router`, scoped CORS for `/site/*` |
-| env vars | `DANA_COMMENT_TOKEN`, `COMMENT_HMAC_SECRET`, `IP_HASH_SALT`, `COMMENTS_REQUIRE_APPROVAL` (default `false`) |
+| env vars | `DANA_COMMENT_TOKEN`, `COMMENT_HMAC_SECRET`, `IP_HASH_SALT` |
 
 ## 11. Acceptance criteria
 
@@ -350,8 +350,9 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 6. Rated books show stars. DNF books show a `dnf` pill instead of stars, lean on the shelf, and have a fore-edge bookmark.
 7. Hover/focus lifts a book about 12px with a springy ease. Other books don't move.
 8. Clicking a book pulls it out, carries it to center-left, and turns it to the front cover. Then the panel slides in with metadata, my review (if any) and visitor notes. Closing reverses the animation and returns focus to the spine.
-9. A visitor can post a note with just a name and text. It appears immediately with the "pinned" animation, and Dana gets an email with a working one-click **hide** link.
-10. Posting more than 3 notes in 10 minutes from one IP is rejected with a friendly message. Filling the honeypot or submitting in under 3s is silently dropped.
+9. A visitor can post a note or a reply with just a name and text. They see it with the "pinned" animation and a *waiting for approval* tag. It's **not visible to anyone else** until Dana approves it from the email (one click + confirm). Rejected notes never appear, and the author's local pending copy clears on their next visit.
+9a. Replies to replies attach to the same top-level note with an `↳ @name` prefix. Dana's own posts and replies are auto-approved and badged `author`.
+10. Posting more than 3 notes in 10 minutes from one IP is rejected with a friendly message. Filling the honeypot or submitting in under 3s is silently dropped, and no email is sent.
 11. Adding `src/reviews/{book_id}.md` and pushing shows the review as the pinned index card and adds a ribbon marker to that spine.
 12. If the comments API is down, the shelf, flip and my reviews all still work, and the notes area shows a friendly retry message.
 13. Animations hold 60 fps on a mid-range phone and a MacBook, and only animate `transform`/`opacity`. Reduced motion gives crossfades only.
@@ -360,7 +361,7 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 
 ## 12. Rollout
 
-1. **Check that the feed is public** (§4.1). This blocks everything else.
+1. ~~Check that the feed is public~~ ✅ confirmed 2026-09-28.
 2. Build the data pipeline + static shelf, with no animation yet. Verify counts against Goodreads.
 3. Add the hop, the flip and reduced motion.
 4. Add my reviews (static) and the panel design.
@@ -372,17 +373,17 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 | # | Question | Decision |
 |---|---|---|
 | 1 | Nav position | `/blog /projects /books /resume /now` |
-| 2 | Show ratings? | Yes, show stars. Also show **DNF** status (replaces stars). |
+| 2 | Show ratings? | Yes, show stars. Also show **DNF** status (replaces stars), from the `did-not-finish` shelf. |
 | 3 | Undated books | **Excluded** from the page |
 | 4 | Re-reads | Appear once, in the latest read year |
 | 5 | Spine color | **From the cover** (build-time `sharp`), clamped to the site palette |
-| 6 | Is the read shelf public? | **Unknown.** Check with the incognito test in §4.1 before implementation. |
+| 6 | Is the read shelf public? | **Yes**, confirmed 2026-09-28 |
 | 7 | Reviews | Written on my site as Markdown in `src/reviews/`, independent of Goodreads |
-| 8 | Comments | Anyone can comment, no account. Custom API on the unraveled.makes backend. |
+| 8 | Comments | Anyone can comment, no account. Custom API on the unraveled.makes backend (approved). |
+| 9 | DNF shelf name | `did-not-finish` |
+| 10 | Moderation | **Hold for approval.** Nothing public until Dana approves. |
+| 11 | Replies | Yes: visitors can reply to each other, one level deep, with `@name` for replies to replies |
 
 ## 14. Open questions
 
-1. **DNF shelf name.** What's the Goodreads shelf called (`dnf`, `did-not-finish`, …), and is it a tag on `read` books or its own exclusive shelf? Default assumption: `dnf`.
-2. **Moderation default.** Publish-then-hide (proposed) or hold-for-approval from day one?
-3. **API host.** Is it OK to host comments on the unraveled.makes service? (It couples the personal site to that app's uptime, but reuses its DB and email.)
-4. **Comment replies.** One level of replies (proposed), or flat only?
+None. All questions are resolved (see §13).
