@@ -469,6 +469,30 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 5. Ship the comments API on unraveled.makes, then wire it into the panel.
 6. Launch: add the nav item, write two or three reviews so the shelf has ribbons from day one.
 
+## 12b. Implementation status
+
+**Step 2 — data pipeline: built** on branch `feat/books-pipeline` (not merged; nothing live changes until it is).
+
+| Piece | Where |
+|---|---|
+| RSS parsing, normalizing, merging, year grouping | `lib/books/goodreads.js` |
+| Paginated fetch with retries + repeated-page guard | `lib/books/fetch.js` |
+| Cover download → 400px WebP + JPEG, dominant-color spines with AA text | `lib/books/covers.js`, `lib/books/color.js` |
+| Settings (user id, shelves, DNF sources, fold rows) | `lib/books/config.js` (moved out of `_data/` so Eleventy doesn't treat it as page data) |
+| Eleventy data file (`books` global) | `src/_data/books.js` |
+| Plain verification page, not in the nav | `src/books.njk` → `/books/` |
+| Tests (17, `npm test`) | `test/` |
+| Branch check workflow (build + report, **no deploy**) | `.github/workflows/books-data-check.yml` |
+| Daily rebuild + cache | `.github/workflows/deploy.yml` (cron `17 13 * * *`) |
+
+**Change from §4.2–4.4:** the last good snapshot and processed covers live in `.cache/books/` and are carried between CI runs with `actions/cache`, instead of a committed `books.cache.json`. That keeps bot commits out of the repo. Fallback order: live Goodreads → cached snapshot → build fails with a "is the shelf public?" message. For local work without network, use `npm run serve:offline` (sample data).
+
+**First run against real data (2026-09-28, run 36476797453):**
+- Feeds: `read` 461 · `currently-reading` 1 · `did-not-finish` 1 · `dnf` tag 2. The `?shelf=dnf` RSS works for the tag.
+- Page: **399 books** across 2021–2026 (2026: 59 · 2025: 81 · 2024: 89 · 2023: 104 · 2022: 30 · 2021: 36), 181 loved, 3 unfinished.
+- Covers: 400 / 400 downloaded.
+- **63 read books have no read date** and are left out per decision #3. They're listed under "data check" at the bottom of `/books/` and in the workflow summary, so dates can be added on Goodreads, or the decision revisited (see open question below).
+
 ## 12a. Mockups (prototype v9, sample data)
 
 All images are rendered from the interactive prototype with the real fonts. Books, covers, reviews and notes are placeholders; on the real site the covers come from Goodreads.
@@ -547,7 +571,7 @@ All images are rendered from the interactive prototype with the real fonts. Book
 
 ## 14. Open questions
 
-None. All questions are resolved (see §13).
+1. **63 undated books.** Decision #3 leaves out books without a read date, and 63 of the 461 read books have none (mostly older reads). Options: add dates on Goodreads, keep them hidden, or show them on a final "read before 2021" shelf.
 
 ## Appendix: rejected directions (for reference)
 
