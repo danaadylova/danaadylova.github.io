@@ -501,6 +501,11 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
   3. Add the `NOTES_EXPORT_TOKEN` secret to this repo.
   4. Merge the site branch.
 
+**Live since 2026-09-28.** Two production issues were found and fixed on launch day:
+- **Emails:** Railway blocks outbound SMTP on non-Pro plans (`Errno 101` to smtp.gmail.com), so no app email was being delivered. All app email now goes through **Resend's HTTPS API** (`RESEND_API_KEY`), with SMTP as the fallback. Without a verified domain, Resend only delivers to Dana's own address; verifying danaadylova.com in Resend is needed for subscriber emails.
+- **Slow first post (~22 s):** caused by Railway's Serverless / app sleeping, now switched off.
+- `/site/health` reports settings (true/false), the email provider, and the last 5 send results. API errors always return readable JSON with CORS headers, and the site gives up after 20 s with a friendly message.
+
 **Change from §4.2–4.4:** the last good snapshot and processed covers live in `.cache/books/` and are carried between CI runs with `actions/cache`, instead of a committed `books.cache.json`. That keeps bot commits out of the repo. Fallback order: live Goodreads → cached snapshot → build fails with a "is the shelf public?" message. For local work without network, use `npm run serve:offline` (sample data).
 
 **First run against real data (2026-09-28, run 36476797453):**
