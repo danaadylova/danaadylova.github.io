@@ -63,6 +63,13 @@ export default function (eleventyConfig) {
       .join("");
   });
 
+  // /books/ids.json → { "<goodreads id>": "Title — Author" } for the notes API (see src/books-ids.njk).
+  eleventyConfig.addFilter("bookIdsJson", (books) => {
+    const out = {};
+    for (const b of [...books.reading, ...books.years.flatMap((y) => y.books)]) out[b.id] = `${b.title} — ${b.author}`;
+    return JSON.stringify(out);
+  });
+
   eleventyConfig.addFilter("gdate", (d) =>
     new Date(d).toLocaleDateString("en-GB", {
       day: "2-digit",

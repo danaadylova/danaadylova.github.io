@@ -1,0 +1,45 @@
+name: Back up margin notes
+
+# Nightly: copy every approved margin note from the notes API into notes/notes.json in this repo.
+# Gives a versioned history of all notes, lets the site render them without the API, and makes a
+# lost database recoverable (see docs/prd-books.md §7.6). Needs repo secret NOTES_EXPORT_TOKEN
+# (same value as EXPORT_TOKEN on the unraveled.makes app).
+on:
+  schedule:
+    - cron: "41 12 * * *" # ≈ 5:40am Pacific, before the daily site rebuild
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export approved notes
+        env:
+          TOKEN: ${{ secrets.NOTES_EXPORT_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::warning::NOTES_EXPORT_TOKEN secret is not set; skipping"; exit 0; fi
+          curl -fsS --retry 3 --max-time 30 -H "Authorization: Bearer $TOKEN" \
+            https://unraveled.danaadylova.com/site/books/comments/export -o /tmp/notes.json
+          python3 - <<'PY'
+          import json
+          new = json.load(open("/tmp/notes.json"))
+          assert isinstance(new.get("books"), dict), "unexpected export shape"
+          old = json.load(open("notes/notes.json"))
+          if new["books"] == old.get("books"):
+              print("no changes")
+          else:
+              json.dump(new, open("notes/notes.json", "w"), indent=1, ensure_ascii=False, sort_keys=True)
+              print(f"notes: {old.get('count', 0)} -> {new['count']}")
+          PY
+      - name: Commit if changed
+        run: |
+          if git diff --quiet notes/notes.json; then exit 0; fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add notes/notes.json
+          git commit -m "Back up margin notes ($(date -u +%F))"
+          git push

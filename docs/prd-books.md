@@ -487,6 +487,20 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 
 **Step 3 — shelf UI: built** on the same branch. `/books` is now the real bookshelf, ported from prototype v9: `src/books.njk`, `src/css/books.css`, `src/js/books.js`. It has real cover images on the 3D covers and face-out books, cover-shaped books, evening mode following the system setting, and a no-JS cover grid. The **/books tab is in the header nav** and `books/` is in the home `ls`. `base.njk` gained `pageClass` / `extraCss` / `extraJs` / `extraFonts` front-matter hooks. **Margin notes show "coming soon"** until the notes API (step 5) exists: `notesApi` in `lib/books/config.js`. Reviews load from `src/reviews/*.md` (see its README). A preview with real data is published as a private Claude artifact.
 
+**Step 5: comments, built.**
+- **API:** `danaadylova/ravelry-gauge-matcher`, branch `feat/book-comments`, file `app/site_comments.py`. It has 15 tests against real Postgres, and its README lists the env vars.
+- **Site:** `src/js/books.js` panel, `/books/ids.json`, `notes/notes.json` plus `.github/workflows/notes-export.yml` for the nightly backup, and `notesApi` in `lib/books/config.js` (overridable with `BOOKS_NOTES_API` for local testing).
+- **Verified end to end** with a browser against a local API and DB: visitor note pending → author sees it waiting → approve → author note pinned in "dana's notes" + author reply → visitor sees all.
+- **Differences from §7:**
+  - Magic-link and email-moderation GETs show a confirm button; the POST does the change, so mail scanners can't sign in or approve.
+  - The session cookie is HMAC-signed and stateless. Rotating `SESSION_SECRET` signs out everywhere.
+  - `hidden` is a fourth status, for taking down an approved note.
+- **To go live:**
+  1. Merge the API branch.
+  2. Set `SESSION_SECRET`, `IP_HASH_SALT`, `AUTHOR_EMAIL` and `EXPORT_TOKEN` on the host.
+  3. Add the `NOTES_EXPORT_TOKEN` secret to this repo.
+  4. Merge the site branch.
+
 **Change from §4.2–4.4:** the last good snapshot and processed covers live in `.cache/books/` and are carried between CI runs with `actions/cache`, instead of a committed `books.cache.json`. That keeps bot commits out of the repo. Fallback order: live Goodreads → cached snapshot → build fails with a "is the shelf public?" message. For local work without network, use `npm run serve:offline` (sample data).
 
 **First run against real data (2026-09-28, run 36476797453):**

@@ -1,0 +1,7 @@
+---
+permalink: /books/ids.json
+eleventyExcludeFromCollections: true
+---
+{#- Books that can receive margin notes, read by the notes API to validate ids and title emails. -#}
+{%- set out = {} -%}
+{{ books | bookIdsJson | safe }}
