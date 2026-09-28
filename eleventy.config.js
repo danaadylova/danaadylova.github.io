@@ -5,6 +5,9 @@ const WIKILINK = /\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g;
 
 export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/css": "css", "src/js": "js", "src/img": "img", CNAME: "CNAME" });
+  // Book covers, downloaded and resized at build time by src/_data/books.js (see lib/books/covers.js).
+  eleventyConfig.addPassthroughCopy({ ".cache/books/covers/out": "img/books" });
+  eleventyConfig.addWatchTarget("./lib/books/");
 
   eleventyConfig.addPlugin(feedPlugin, {
     type: "atom",

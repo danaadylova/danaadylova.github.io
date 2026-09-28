@@ -1,0 +1,64 @@
+---
+layout: base.njk
+title: books
+permalink: /books/
+eleventyExcludeFromCollections: true
+description: Everything Dana has read, from Goodreads.
+---
+{#- Step 2 of the rollout (docs/prd-books.md §12): plain data view to verify the pipeline.
+    The shelf UI from the prototype replaces this markup next; not linked from the nav yet. -#}
+<style>
+  .bk-sub { font-family: var(--mono); font-size: .8rem; color: var(--muted); margin-top: -.25rem; }
+  .bk-grid { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 1rem .9rem; }
+  .bk-grid li { font-size: .78rem; line-height: 1.35; }
+  .bk-cover { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 2px 5px 5px 2px; box-shadow: 2px 2px 0 var(--card-border); background: var(--card); }
+  .bk-fallback { display: flex; align-items: flex-end; padding: .5rem; font-family: var(--mono); font-size: .7rem; line-height: 1.2; }
+  .bk-t { display: block; margin-top: .35rem; color: var(--ink); font-weight: 500; }
+  .bk-m { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+  .bk-dnf { color: var(--pill-ink); background: var(--pill-bg); border-radius: 999px; padding: 0 .4rem; }
+  .bk-debug { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
+</style>
+
+<h1 data-typed>books</h1>
+<p class="bk-sub">{{ books.total }} books · {{ books.lovedTotal }} loved · {{ books.dnfTotal }} unfinished · updated {{ books.fetchedAt | gdate }} · via goodreads</p>
+
+{%- macro bookCard(b) -%}
+<li>
+  <a href="{{ b.url }}" title="{{ b.title }}{% if b.series %} ({{ b.series }} #{{ b.seriesNumber }}){% endif %} — {{ b.author }}">
+    {%- if b.cover -%}
+    <picture>
+      <source srcset="{{ b.cover }}.webp" type="image/webp">
+      <img class="bk-cover" src="{{ b.cover }}.jpg" alt="" width="{{ b.coverWidth }}" height="{{ b.coverHeight }}" loading="lazy" decoding="async">
+    </picture>
+    {%- else -%}
+    <span class="bk-cover bk-fallback" style="background:{{ b.color }};color:{{ b.textColor }}">{{ b.title }}</span>
+    {%- endif -%}
+  </a>
+  <span class="bk-t">{{ b.title }}</span>
+  <span class="bk-m">{{ b.author }}</span><br>
+  <span class="bk-m">
+    {%- if b.reading %}started {{ b.whenLabel }}
+    {%- elif b.dnf %}<span class="bk-dnf">dnf</span> {{ b.whenLabel }}
+    {%- else %}{% for i in range(0, b.rating) %}★{% endfor %}{% for i in range(b.rating, 5) %}☆{% endfor %} · {{ b.whenLabel }}{% endif -%}
+  </span>
+</li>
+{%- endmacro %}
+
+<h2>currently reading <small class="bk-m">({{ books.reading | length }})</small></h2>
+{% if books.reading | length %}
+<ul class="bk-grid">{% for b in books.reading %}{{ bookCard(b) }}{% endfor %}</ul>
+{% else %}<p class="bk-m">not reading anything right now</p>{% endif %}
+
+{% for y in books.years %}
+<h2 id="y{{ y.year }}">{{ y.year }} <small class="bk-m">({{ y.books | length }}{% if y.dnfCount %} · {{ y.dnfCount }} unfinished{% endif %})</small></h2>
+<ul class="bk-grid">{% for b in y.books %}{{ bookCard(b) }}{% endfor %}</ul>
+{% endfor %}
+
+<details class="bk-debug">
+  <summary>data check</summary>
+  <p>source: {{ books.source }} · fetched {{ books.fetchedAt }} · {{ books.noCover }} without a cover</p>
+  {% if books.skippedUndated | length %}
+  <p>left out because they have no read date on Goodreads ({{ books.skippedUndated | length }}):</p>
+  <ul>{% for s in books.skippedUndated %}<li><a href="https://www.goodreads.com/book/show/{{ s.id }}">{{ s.title }}</a></li>{% endfor %}</ul>
+  {% endif %}
+</details>
