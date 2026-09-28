@@ -515,7 +515,7 @@
   function localPending(bookId) {
     try {
       var all = JSON.parse(localStorage.getItem("books-pending") || "{}"), month = 30 * 86400000;
-      return (all[bookId] || []).filter(function (n) { return Date.now() - Date.parse(n.created_at) < month; });
+      return (all[bookId] || []).filter(function (n) { return n.key && Date.now() - Date.parse(n.created_at) < month; });
     } catch (err) { return []; }
   }
   function saveLocalPending(bookId, list) {
@@ -599,12 +599,28 @@
     if (count) count.textContent = t.threads.filter(function (n) { return n.status !== "pending"; }).length;
   }
 
+  /* Your pinned notes are kept in this browser until approved; ask the server whether they're still
+     waiting, so a rejected or hidden note stops showing "waiting for dana". */
+  function checkMine(panel, b, comments) {
+    var local = localPending(b.id);
+    if (!local.length) return;
+    api("/books/comments/mine", { method: "POST", body: { keys: local.map(function (n) { return n.key; }) } }).then(function (j) {
+      var known = j.notes || {};
+      var still = local.filter(function (n) { return known[n.key] && known[n.key].status === "pending"; });
+      if (still.length === local.length) return;
+      saveLocalPending(b.id, still);
+      b.thread = splitThread(b, comments);
+      if (panel.isConnected) renderNotes(panel, b);
+    }).catch(function () {});
+  }
+
   function loadThread(panel, b) {
     if (b.staticNotes && !b.thread) b.thread = splitThread(b, b.staticNotes);
     renderNotes(panel, b);
     return api("/books/" + b.id + "/comments").then(function (j) {
       AUTHOR = !!j.author;
       b.thread = splitThread(b, j.comments || []);
+      if (!AUTHOR) checkMine(panel, b, j.comments || []);
       b.noteCount = b.thread.threads.filter(function (n) { return n.status !== "pending"; }).length;
       if (panel.isConnected) { renderNotes(panel, b); syncComposer(panel, b); }
     }).catch(function (err) {
@@ -632,6 +648,7 @@
     if (!body || !name) { err.textContent = !body ? "Write something first." : "Add a name so Dana knows who it's from."; err.hidden = false; return; }
     err.hidden = true; btn.disabled = true;
     if (!form.dataset.key) form.dataset.key = uuid(); // same key on retry → never posted twice
+    var sentKey = form.dataset.key;
     api("/books/" + b.id + "/comments", { method: "POST", body: {
       name: name, body: body, parent_id: parentId || null, client_key: form.dataset.key,
       website: form.querySelector('input[name="hp_margin_x"]').value, elapsed_ms: Date.now() - openedAt
@@ -645,7 +662,7 @@
       ta.value = ""; ta.style.height = "auto";
       var created = j.comment || { id: j.id, name: name, body: body, created_at: new Date().toISOString(), status: "pending", parent_id: parentId || null };
       if (j.status === "pending" && j.id) {
-        var mine = localPending(b.id); mine.push({ id: j.id, name: name, body: body, parent_id: parentId || null, created_at: new Date().toISOString() }); saveLocalPending(b.id, mine);
+        var mine = localPending(b.id); mine.push({ id: j.id, key: sentKey, name: name, body: body, parent_id: parentId || null, created_at: new Date().toISOString() }); saveLocalPending(b.id, mine);
       }
       if (!b.thread) b.thread = splitThread(b, []);
       if (created.is_author && !created.parent_id) b.thread.dana.unshift(created);
