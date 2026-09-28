@@ -1,0 +1,58 @@
+name: Notes API health check
+
+# Checks the margin-notes API (unraveled.makes on Railway) the way the browser uses it, from outside.
+# Runs daily; fails (and GitHub emails the repo owner) if settings are missing, CORS breaks, or the
+# most recent email failed. Also runnable by hand, or by pushing to any `diag/*` branch.
+on:
+  schedule:
+    - cron: "23 16 * * *" # ≈ 9:20am Pacific
+  workflow_dispatch:
+  push:
+    branches: ["diag/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe the API
+        env:
+          U: https://unraveled.danaadylova.com
+          ORIGIN: https://danaadylova.com
+        run: |
+          set -u
+          note() { printf '::notice title=%s::%s\n' "$1" "$(echo "$2" | tr '\r\n' '  ' | cut -c1-1500)"; }
+          fail=0
+          # 1st request may wake a sleeping service; time it.
+          note "wake" "$(curl -s -o /dev/null -w '%{http_code} %{time_total}s' --max-time 60 "$U/site/me")"
+
+          health=$(curl -sS --max-time 30 "$U/site/health" || echo '{}')
+          note "health" "$health"
+          echo "$health" | python3 -c '
+          import json, sys
+          h = json.load(sys.stdin)
+          problems = []
+          if not h.get("ok"): problems.append("settings missing: " + ", ".join(k for k, v in h.get("settings", {}).items() if not v))
+          recent = h.get("email", {}).get("recent", [])
+          if recent and not recent[0].get("ok"): problems.append("last email failed: " + str(recent[0].get("error")))
+          for p in problems: print(f"::error title=notes API::{p}")
+          sys.exit(1 if problems else 0)
+          ' || fail=1
+
+          pre=$(curl -sS -i -X OPTIONS "$U/site/books/1/comments" -H "Origin: $ORIGIN" -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type' --max-time 30)
+          note "preflight" "$(echo "$pre" | head -8)"
+          echo "$pre" | grep -qi "access-control-allow-origin: $ORIGIN" || { echo "::error title=notes API::CORS preflight does not allow $ORIGIN"; fail=1; }
+
+          get=$(curl -sS -o /dev/null -w '%{http_code} %{time_total}s' -H "Origin: $ORIGIN" --max-time 30 "$U/site/books/comments/counts")
+          note "counts" "$get"
+          case "$get" in 200*) ;; *) echo "::error title=notes API::counts returned $get"; fail=1;; esac
+
+          # Validation-only POST (book id 1 is never on the shelf): exercises routing, origin check and
+          # the book list without saving anything or sending email.
+          post=$(curl -sS -w ' [%{http_code}]' -X POST "$U/site/books/1/comments" -H "Origin: $ORIGIN" -H 'Content-Type: application/json' --data '{"name":"healthcheck","body":"x","elapsed_ms":9000}' --max-time 30)
+          note "validation POST" "$post"
+          case "$post" in *'[404]'*) ;; *) echo "::error title=notes API::validation POST unexpected: $post"; fail=1;; esac
+
+          exit $fail
