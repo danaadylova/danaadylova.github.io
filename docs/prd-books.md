@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Owner** | Dana Adylova |
-| **Status** | Draft v6 (visual direction set from the interactive prototype) |
+| **Status** | Draft v7 (visual direction set from the interactive prototype) |
 | **Created** | 2026-09-28 · **Updated** 2026-09-28 |
 | **Site** | https://danaadylova.com (Eleventy 3 → GitHub Pages via `.github/workflows/deploy.yml`) |
 | **Data source** | Goodreads profile [135558742](https://www.goodreads.com/user/show/135558742), shelves `read`, `currently-reading`, [`did-not-finish`](https://www.goodreads.com/review/list/135558742?shelf=did-not-finish) + tag [`dnf`](https://www.goodreads.com/review/list/135558742-dana?tag=dnf) (feed confirmed public) |
@@ -350,6 +350,45 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 - **Scroll:** the panel scrolls on its own. The page behind it is scroll-locked while a book is open.
 - **Accessibility:** the panel is part of the book dialog. Headings are real `<h2>/<h3>`. Notes are a `<ol>` of `<article>`. The form has visible labels. A newly posted note is announced via `aria-live="polite"`.
 
+### 7.5 Author mode: the site knows when it's me
+
+**Goal:** when I leave a note on the site, it's recognized as mine, published instantly (no approval), and **pinned at the top in the "dana's notes" card**, not mixed into visitor notes.
+
+**How the site recognizes me: a magic-link sign-in (no password)**
+1. There's an unobtrusive `sign in` link in the footer (or `/books/#author`). It asks for an email address.
+2. The API checks it against `AUTHOR_EMAIL` (my address, an env var). If it matches, it emails a one-time sign-in link, reusing the app's existing `send_email`. If it doesn't match, it shows the same neutral "check your inbox" message and sends nothing, so it can't be used to guess the address.
+3. Clicking the link calls `GET /site/auth/callback?token=…`. The token is single-use, expires in 15 minutes and is HMAC-signed. The API sets a **session cookie** on `unraveled.danaadylova.com`: `HttpOnly; Secure; SameSite=Lax`, lasting 90 days. Because `danaadylova.com` and `unraveled.danaadylova.com` are the **same site**, the books page can send that cookie with `fetch(…, { credentials: "include" })`. CORS for `/site/*` allows the exact origin `https://danaadylova.com` with `Access-Control-Allow-Credentials: true`.
+4. `GET /site/me` returns `{ author: true }`, and the page switches into **author mode**. The composer placeholder becomes *"add to dana's notes…"*, and a small `signed in as dana · sign out` line shows in the panel footer.
+- An alternative with no email step: a long random `DANA_TOKEN` pasted once into a hidden settings field and kept in `localStorage`. It's simpler but weaker (readable by any script on the page), so the magic link is recommended.
+
+**What changes in author mode**
+- **My top-level notes** are saved with `is_author = true, status = 'approved'` and render **inside the "dana's notes" card**, not in the margin-notes thread. The card becomes a small journal for that book:
+  - the Markdown review from `src/reviews/{id}.md` (if any) comes first,
+  - then my on-site notes as dated entries, **newest first**, each with its date in mono and a thin dashed divider (for example a re-read, or a thought three chapters in).
+  - Books with only on-site notes still get the card, so a review can be started entirely from the site.
+- **My replies** to visitors stay in their thread, with the `author` badge and auto-approved.
+- **Inline moderation:** pending visitor notes are visible to me in place, with `approve` / `reject` buttons, so I don't need the email links. Visitors still never see pending notes.
+- **Edit / delete** my own notes: a small `edit` link on each of my entries (`PATCH /site/books/comments/{id}`, `DELETE …`, author only).
+- On the shelf, a book with on-site notes from me gets the same **ribbon** as a book with a Markdown review.
+
+**API additions:** `POST /site/auth/request`, `GET /site/auth/callback`, `GET /site/me`, `POST /site/auth/logout`. Author checks use the session cookie, which replaces the Bearer `DANA_TOKEN` from §7.2 (kept only as a fallback for scripts). Env: `AUTHOR_EMAIL`, `SESSION_SECRET`.
+
+### 7.6 Where notes are stored, and how not to lose them
+
+| What | Where it lives | Survives a restart / redeploy? | Can it be lost? |
+|---|---|---|---|
+| My Markdown reviews | `src/reviews/*.md` in this Git repo | Yes, it's in Git | Only if the repo is deleted. Every change is versioned. |
+| My on-site notes, visitor notes, replies | Table `book_comments` in the **Postgres database** used by the unraveled.makes app (`DATABASE_URL`) | **Yes.** The web server is stateless: restarts, crashes and redeploys don't touch the database | Only if the **database itself** is deleted or expires, or through a bad migration or manual deletion |
+| Pending / rejected notes | Same table, `status` column | Yes | Rejected notes are kept, not deleted, so a mistake can be undone |
+
+**Main risk:** the hosting plan for the database. Some hosts' free or hobby Postgres plans **expire or get deleted** (for example after 30–90 days, or when a plan lapses), and a DB tied to an app can be removed with it. **Action item:** confirm which host and plan `DATABASE_URL` points to, and make sure it's a paid or persistent plan with automatic backups. The session couldn't see this from the repo, since there's no host config besides the `Procfile`.
+
+**Belt-and-braces (in scope for v1):**
+1. **Nightly export to Git:** a scheduled GitHub Action in this repo calls `GET /site/books/comments/export` (author-authenticated, via a repo secret). It writes all **approved** notes to `src/_data/notes.json` and commits it only if it changed. This gives a full, versioned history of every note in Git, independent of the database.
+2. **Static-first rendering:** the site build reads `notes.json`, so approved notes (mine and visitors') are **in the HTML**. They show up even if the API is down, load instantly, and are indexable. The live API then only adds notes newer than the last export, and handles posting.
+3. **Weekly full DB backup:** a scheduled `pg_dump` of the `book_comments` table (including pending and rejected) to a private location, such as an encrypted artifact or a private repo. This is in addition to the host's own backups.
+4. **Restore path:** `notes.json` can be re-imported into a fresh database with a one-off script (`scripts/import-notes.py`), so even a total database loss costs at most a day of notes.
+
 ## 8. Accessibility (whole page)
 
 - Each book is a `<button>` in a per-shelf `<ul>` (`<section aria-labelledby>` per year). Its accessible name is `"{title} by {author}, read {Month YYYY}"`, plus `", did not finish"`, `", reviewed"` and `", {n} notes"` where they apply.
@@ -430,6 +469,53 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 5. Ship the comments API on unraveled.makes, then wire it into the panel.
 6. Launch: add the nav item, write two or three reviews so the shelf has ribbons from day one.
 
+## 12a. Mockups (prototype v9, sample data)
+
+All images are rendered from the interactive prototype with the real fonts. Books, covers, reviews and notes are placeholders; on the real site the covers come from Goodreads.
+
+**Page in day and evening mode**
+
+![Day mode: page top, currently-reading shelf and year shelves](prd-books/01-final-day-top.jpg)
+![Evening mode: charcoal palette with warm lamp light](prd-books/02-final-evening-top.jpg)
+
+**Hover: the hop, with the title label**
+
+![Hovering a 5-star spine lifts it and shows its title](prd-books/03-final-hover-hop.jpg)
+
+**Opening a book**
+
+![Book pulled out and turned to its cover, with review and margin notes](prd-books/04-final-open-review-and-notes.jpg)
+![A 5-star book opened in evening mode](prd-books/05-final-open-5star-evening.jpg)
+![An unfinished book: lifted from the flat pile, with a 'left off here' bookmark](prd-books/09-final-open-dnf-flat-book.jpg)
+![A currently-reading book opened from the face-out shelf](prd-books/10-final-open-currently-reading.jpg)
+
+**Posting a note: pending until approved**
+
+![A visitor's new note shown to them as waiting for approval](prd-books/06-final-note-pending-approval.jpg)
+
+**Big years: folded (top rated first) vs expanded (by read date)**
+
+![A 100-book year folded to two shelves of its highest-rated books](prd-books/07-final-2025-folded-top-rated.jpg)
+![The same year expanded, all books by read date with unfinished piles at the end](prd-books/08-final-2025-expanded-by-date.jpg)
+
+**"Loved" filter** (4★ and 5★ stay lit; everything else dims in place)
+
+![Loved filter dims non-favorites without moving anything](prd-books/11-final-filter-loved.jpg)
+
+**Phone**
+
+![Phone: shelves](prd-books/12-final-mobile-shelves.jpg)
+![Phone: opened book with the notes panel as a bottom sheet](prd-books/13-final-mobile-open.jpg)
+
+**The stoneware mug and steam**
+
+![Mug and steam, day](prd-books/14-final-mug-day.jpg) ![Mug and steam, evening](prd-books/14-final-mug-evening.jpg)
+
+**Heading font comparison** (Instrument Serif, option E, was chosen)
+
+![Six heading font options, day](prd-books/15-heading-font-comparison-day.jpg)
+![Six heading font options, evening](prd-books/15-heading-font-comparison-evening.jpg)
+
 ## 13. Decisions log
 
 | # | Question | Decision |
@@ -453,6 +539,8 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 | 17 | Opened-book backdrop | Much dimmer (about 80–88%) with a warm spotlight |
 | 18 | Slow-motion toggle | **Removed.** It was a prototype review tool and won't ship. |
 | 19 | DNF sources | Shelf `did-not-finish` **and** tag `dnf` |
+| 23 | My own notes on the site | **Author mode** via magic-link sign-in. My notes are auto-approved and **pinned in "dana's notes"** (journal-style, newest first); inline moderation |
+| 24 | Notes durability | Postgres (survives restarts) + **nightly export to Git** (`notes.json`) + static rendering + weekly `pg_dump`. Confirm the DB plan is persistent |
 | 22 | Large years | Fold to 2 shelves + peek. **Folded = sorted by rating, then read date**; expanded = all by read date; books glide between orders. Filters expand everything; jump-to-year row |
 | 21 | Top shelf name | **"currently reading"** (renamed from "on the nightstand") |
 | 20 | Mug on the currently-reading shelf | 3D-shaded stoneware mug with canvas steam |
@@ -460,3 +548,30 @@ The panel is the warm counterpart to the shelf's crisp motion. It should feel li
 ## 14. Open questions
 
 None. All questions are resolved (see §13).
+
+## Appendix: rejected directions (for reference)
+
+Directions that were tried in the prototype and dropped, and why. Where the original screen wasn't kept, it's described in words; the images below were re-created from the prototype.
+
+| # | Rejected idea | Replaced by | Why |
+|---|---|---|---|
+| R1 | **Quirky year numerals**: Fraunces italic with `SOFT`/`WONK`, tilted bouncing digits, terra last digit, wavy yarn underline | Instrument Serif | Too whimsical; didn't feel right |
+| R2 | Top shelf called **"on the nightstand"** | "currently reading" | Plainer and clearer |
+| R3 | **Brown / chocolate evening mode** (`#1d1612` page, `#271e18` walls, walnut planks) | Near-black charcoal | Too brown; wanted darker |
+| R4 | **Sans-serif year numerals** (Inter 600, tight tracking) | Instrument Serif | Lacked character |
+| R5 | Other heading fonts: **Bricolage Grotesque, Space Mono (with `##`), Instrument Sans (narrow), Unbounded, Inter** | Instrument Serif | Compared side by side (see §12a, font comparison) |
+| R6 | **Lighter dim** when a book is open (about 58% dusk) | About 80–88% dusk + spotlight | Should feel dimmer, like lights going down |
+| R7 | **DNF books leaning** against their neighbor, with a fore-edge bookmark (v1–v2) | Lying flat in a pile | Flat reads more clearly as "put down" |
+| R8 | **v1–v2 panel look**: dot-grid sheet with a dashed "stitched" terra border, tilted paper-slip notes, index card with lines + washi tape all at once | Clean rounded sheet, one flourish (washi-taped review card) | Too twee and busy; not contemporary |
+| R9 | **v1–v2 open state** washing the page out with a white overlay | Warm dark dusk + spotlight | Brightening felt wrong; dimming feels cozy |
+| R10 | **Simple flat mug** with two CSS steam lines | 3D-shaded stoneware mug + canvas steam | Needed to be prettier and more realistic |
+| R11 | **Slow-motion toggle** (4× slower animations) | Removed entirely | Annoying; it was only a review tool and never meant to ship |
+| R12 | Folded years showing the **first 2 shelves by date** | Folded = top rated first, expanded = by date | Folded view should show the best books |
+| R13 | Heading **font switcher** in the prototype | Removed after choosing | Prototype-only comparison tool |
+
+No images were kept for R7–R11; those early screens were overwritten while iterating.
+
+![R1 + R2: quirky Fraunces years and "on the nightstand"](prd-books/rejected-01-quirky-fraunces-years-and-nightstand.jpg)
+![R3: brown evening mode](prd-books/rejected-02-brown-evening.jpg)
+![R4: sans-serif (Inter) year numerals](prd-books/rejected-03-sans-inter-years.jpg)
+![R6: lighter dim when a book is open](prd-books/rejected-04-lighter-dim-when-open.jpg)
