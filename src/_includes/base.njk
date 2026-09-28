@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"{% if pageClass %} class="{{ pageClass }}"{% endif %}>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,7 +14,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/garden.css" />
+{% if extraFonts %}  <link href="{{ extraFonts }}" rel="stylesheet" />
+{% endif %}  <link rel="stylesheet" href="/css/garden.css" />
+{% if extraCss %}  <link rel="stylesheet" href="{{ extraCss }}" />
+{% endif %}
   <script>document.documentElement.className += " js";</script>
 </head>
 <body>
@@ -23,6 +26,7 @@
     <nav class="folders" aria-label="Site">
       <a href="/blog/" {% if '/blog' in page.url %}class="here"{% endif %}>/blog</a>
       <a href="/projects/" {% if '/projects' in page.url %}class="here"{% endif %}>/projects</a>
+      <a href="/books/" {% if '/books' in page.url %}class="here"{% endif %}>/books</a>
       <a href="/resume/" {% if '/resume' in page.url %}class="here"{% endif %}>/resume</a>
       <a href="/now/" {% if '/now' in page.url %}class="here"{% endif %}>/now</a>
     </nav>
@@ -39,5 +43,7 @@
     <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">sound: off</button>
   </footer>
   <script src="/js/garden.js"></script>
+{% if extraJs %}  <script src="{{ extraJs }}" defer></script>
+{% endif %}
 </body>
 </html>

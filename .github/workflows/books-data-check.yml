@@ -1,0 +1,51 @@
+name: Books data check
+
+# Builds the site from real Goodreads data WITHOUT deploying, to verify the /books pipeline on a branch.
+on:
+  push:
+    branches: ["feat/books-*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write # only to publish the throwaway books-preview-data branch
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Restore Goodreads snapshot + covers
+        uses: actions/cache@v4
+        with:
+          path: .cache/books
+          key: books-${{ github.run_id }}
+          restore-keys: books-
+      - name: Build (fetches Goodreads, downloads covers)
+        run: npm run build
+      - name: Report
+        run: node scripts/books-report.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: books-preview
+          path: |
+            _site/books
+            _site/img/books
+            _site/css
+          retention-days: 7
+      - name: Publish data snapshot for previews (throwaway branch)
+        if: github.ref != 'refs/heads/main'
+        run: |
+          mkdir -p /tmp/pub/covers
+          cp .cache/books/snapshot.json /tmp/pub/
+          cp -r .cache/books/covers/out .cache/books/covers/meta /tmp/pub/covers/
+          cd /tmp/pub
+          git init -q -b books-preview-data
+          git add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -qm "books preview data from ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" books-preview-data

@@ -5,6 +5,9 @@ const WIKILINK = /\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g;
 
 export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/css": "css", "src/js": "js", "src/img": "img", CNAME: "CNAME" });
+  // Book covers, downloaded and resized at build time by src/_data/books.js (see lib/books/covers.js).
+  eleventyConfig.addPassthroughCopy({ ".cache/books/covers/out": "img/books" });
+  eleventyConfig.addWatchTarget("./lib/books/");
 
   eleventyConfig.addPlugin(feedPlugin, {
     type: "atom",
@@ -58,6 +61,13 @@ export default function (eleventyConfig) {
         });
       })
       .join("");
+  });
+
+  // /books/ids.json → { "<goodreads id>": "Title — Author" } for the notes API (see src/books-ids.njk).
+  eleventyConfig.addFilter("bookIdsJson", (books) => {
+    const out = {};
+    for (const b of [...books.reading, ...books.years.flatMap((y) => y.books)]) out[b.id] = `${b.title} — ${b.author}`;
+    return JSON.stringify(out);
   });
 
   eleventyConfig.addFilter("gdate", (d) =>

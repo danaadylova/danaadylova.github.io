@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Daily rebuild so new Goodreads reads show up without a commit (13:17 UTC ≈ 6am Pacific).
+    - cron: "17 13 * * *"
 
 permissions:
   contents: read
@@ -21,9 +24,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm test
+      - name: Restore Goodreads snapshot + covers
+        uses: actions/cache@v4
+        with:
+          path: .cache/books
+          key: books-${{ github.run_id }}
+          restore-keys: books-
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
