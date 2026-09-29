@@ -1,0 +1,13 @@
+name: Genre probe (diag only)
+on:
+  push:
+    branches: ["diag/genres"]
+permissions: { contents: read }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node diag/probe.mjs
