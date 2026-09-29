@@ -76,7 +76,8 @@ test("library: groups by year newest first, drops undated reads, merges both DNF
   assert.equal(lib.dnfTotal, 2);
   assert.equal(lib.years[1].dnfCount, 2);
   assert.equal(lib.lovedTotal, 2); // ids 1 (4★) and 2 (5★); DNFs never count as loved
-  assert.deepEqual(lib.skippedUndated, [{ id: "3", title: "No date" }]);
+  assert.deepEqual(lib.skippedUndated.map(({ id, title }) => ({ id, title })), [{ id: "3", title: "No date" }]);
+  assert.ok(Array.isArray(lib.skippedUndated[0].covers)); // kept so posts can show the cover
   assert.equal(lib.reading.length, 1);
   assert.equal(lib.reading[0].title, "On my nightstand");
   assert.equal(lib.reading[0].month, 9);
