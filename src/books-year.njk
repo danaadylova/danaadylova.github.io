@@ -1,0 +1,95 @@
+---
+layout: base.njk
+pagination:
+  data: books.cards
+  size: 1
+  alias: card
+permalink: "/books/{{ card.year }}/"
+eleventyExcludeFromCollections: true
+pageClass: page-year
+extraCss: /css/books-year.css
+eleventyComputed:
+  title: "{{ card.year }} reading card"
+  description: "Dana's {{ card.year }} in books: {{ card.count }} books, {{ card.pages }} pages, favorite authors and the best books of each month."
+---
+{#- Reading card for one finished year. Stats: lib/books/yearstats.js. Design: docs/prd-books.md §6.8. -#}
+{%- macro cover(b, cls) -%}
+{%- if b.cover -%}<picture><source srcset="{{ b.cover }}.webp" type="image/webp"><img class="{{ cls }}" src="{{ b.cover }}.jpg" alt="Cover of {{ b.title }}" loading="lazy"></picture>
+{%- else -%}<span class="{{ cls }} nocover" aria-hidden="true"></span>{%- endif -%}
+{%- endmacro -%}
+{%- macro stars(r) -%}<span class="st" aria-label="rated {{ r }} of 5">{% for i in range(0, 5) %}{% if i < r %}★{% else %}<span class="off">★</span>{% endif %}{% endfor %}</span>{%- endmacro -%}
+{%- macro author(a, both) -%}
+<li>
+  <span class="aname">{{ a.name }}</span>{% if both and a.name in both %}<span class="both">in both</span>{% endif %}
+  <span class="ameta">{{ a.count }} book{% if a.count != 1 %}s{% endif %}{% if a.avg %} · average {{ a.avg | fixed }}★{% endif %}</span>
+  <span class="minis">{% for b in a.books %}{% if loop.index <= 8 %}{% if b.cover %}<img src="{{ b.cover }}.webp" alt="" title="{{ b.title }}" loading="lazy">{% endif %}{% endif %}{% endfor %}{% if a.books.length > 8 %}<span class="more">+{{ a.books.length - 8 }}</span>{% endif %}</span>
+</li>
+{%- endmacro -%}
+
+<p class="crumb"><a href="/books/">/books</a> / {{ card.year }}</p>
+<h1 class="yh">{{ card.year }} <em>reading card</em></h1>
+
+<div class="rc">
+  <p class="rc-ttl">january – december {{ card.year }} · from goodreads</p>
+  <dl>
+    <div class="row"><dt>books finished</dt><dd>{{ card.count }}</dd></div>
+    <div class="row"><dt>pages read</dt><dd>{{ card.pages | commas }} <small>≈ {{ card.pagesPerDay }} a day</small></dd></div>
+    <div class="row"><dt>average rating</dt><dd>{{ card.avgRating | fixed }}★</dd></div>
+    <div class="row"><dt>loved</dt><dd>{{ card.fiveStar }} at 5★ · {{ card.fourStar }} at 4★</dd></div>
+    {% if card.busiestMonth %}<div class="row"><dt>biggest month</dt><dd>{{ card.busiestMonth.name }} <small>{{ card.busiestMonth.pages | commas }} pages</small></dd></div>{% endif %}
+  </dl>
+</div>
+
+<h2>pages per month</h2>
+<p class="sub">each block is one book, as tall as its page count</p>
+<p class="legend"><span><i class="lv"></i>rated 4★ or 5★</span><span><i></i>everything else</span></p>
+<div class="chart" role="img" aria-label="Pages read per month in {{ card.year }}: {% for m in card.months %}{{ m.name }} {{ m.pages }}{% if not loop.last %}, {% endif %}{% endfor %}">
+  {%- for m in card.months %}
+  <div class="col{% if card.busiestMonth and m.name == card.busiestMonth.name %} peak{% endif %}">
+    <span class="tot">{% if m.pages %}{{ (m.pages / 1000) | fixed }}k{% else %}–{% endif %}</span>
+    <div class="bar">{% for b in m.blocks %}<span{% if b.loved %} class="lv"{% endif %} style="height:{{ [2, (b.pages / card.maxMonthPages * 190)] | max | round(1) }}px" title="{{ b.title }} · {{ b.pages or '?' }} pages{% if b.rating %} · {{ b.rating }}★{% endif %}"></span>{% endfor %}</div>
+    <span class="mo">{{ m.short }}</span>
+  </div>
+  {%- endfor %}
+</div>
+
+{% if card.biggest and card.smallest %}
+<h2>biggest &amp; smallest</h2>
+<div class="extremes">
+  <div class="ex">{{ cover(card.biggest, "cv") }}<div><span class="lab">the doorstop</span><span class="bt">{{ card.biggest.title }}</span><span class="ba">{{ card.biggest.author }}</span><span class="pg">{{ card.biggest.pages | commas }} pages</span></div></div>
+  <div class="ex">{{ cover(card.smallest, "cv") }}<div><span class="lab">the shortest</span><span class="bt">{{ card.smallest.title }}</span><span class="ba">{{ card.smallest.author }}</span><span class="pg">{{ card.smallest.pages | commas }} pages</span></div></div>
+</div>
+{% endif %}
+
+<h2>favorite authors</h2>
+{% if card.authors.together %}
+<p class="sub">the authors I read most were also the ones I rated highest</p>
+<ul class="authors">{% for a in card.authors.together %}{{ author(a) }}{% endfor %}</ul>
+{% else %}
+<div class="acols">
+  <div><h3 class="acol">most read</h3><ul class="authors">{% for a in card.authors.mostRead %}{{ author(a, card.authors.inBoth) }}{% endfor %}</ul></div>
+  {% if card.authors.highestRated.length %}<div><h3 class="acol">highest rated <small>2+ books</small></h3><ul class="authors">{% for a in card.authors.highestRated %}{{ author(a, card.authors.inBoth) }}{% endfor %}</ul></div>{% endif %}
+</div>
+{% endif %}
+
+<h2>month by month</h2>
+<p class="sub">the three highest-rated books each month</p>
+<ol class="months">
+{%- for m in card.months %}
+  {%- if m.count %}
+  <li>
+    <h3>{{ m.name }}</h3>
+    <p class="mmeta">{{ m.count }} book{% if m.count != 1 %}s{% endif %} · {{ m.pages | commas }} pages</p>
+    <ol class="top3">{% for b in m.top %}<li>{{ cover(b, "cv") }}<span class="bt">{{ b.title }}</span><span class="ba">{{ b.author }}</span>{% if b.rating %}{{ stars(b.rating) }}{% endif %}</li>{% endfor %}</ol>
+  </li>
+  {%- else %}
+  <li class="empty"><h3>{{ m.name }}</h3><p class="mmeta">no finished books</p></li>
+  {%- endif %}
+{%- endfor %}
+</ol>
+
+<nav class="yearnav" aria-label="Other years">
+  <span>{% if card.older %}<a href="/books/{{ card.older }}/">← {{ card.older }}</a>{% endif %}</span>
+  <a href="/books/#y{{ card.year }}">back to the shelf</a>
+  <span>{% if card.newer %}<a href="/books/{{ card.newer }}/">{{ card.newer }} →</a>{% endif %}</span>
+</nav>

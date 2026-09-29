@@ -237,6 +237,22 @@ The fallback is a **typographic cover**: a palette color background, the title i
 
 - No books (feed private and no cache): the build fails on first run (§4.1). In any later failure the cache is used, and the "updated" date shows how stale it is.
 
+### 6.8 Reading cards: one page per finished year (added 2026-09-29)
+
+Each **finished** year gets its own page at `/books/<year>/`, linked as "reading card →" next to the year heading on /books. The year in progress (Pacific time) never gets one. Unfinished (DNF) books are left out of every number.
+
+Top to bottom:
+
+1. **Heading:** "2025 *reading card*" (Instrument Serif; "reading card" in italic terra).
+2. **The reading card:** an index card with a terra rule under its label and dark teal lines sitting just under each row, so nothing looks crossed out. Rows: books finished · pages read (≈ per day) · average rating (rated books only) · loved (5★ and 4★ counts) · biggest month (by pages).
+3. **Pages per month:** a bar per month, built from one block per book, as tall as its page count. Books rated 4★ or 5★ are solid terra at the bottom of each bar; the rest are pale terra. Alternate blocks are a shade lighter, and the month with the most pages has its total in terra.
+4. **Biggest & smallest:** cover, title, author and page count of the longest and shortest book.
+5. **Favorite authors:** two lists side by side, top 3 each: **most read** (book count, then average) and **highest rated** (average, among authors with 2+ books). An author on both gets an "in both" tag. When both lists name the same people, they merge into one list.
+6. **Month by month:** every month with its book and page count, and its three highest-rated books (cover, title, author, stars). Ties go to the book finished first. Months with nothing read say "no finished books".
+7. **Year navigation:** older / newer reading cards and "back to the shelf".
+
+Stats are computed at build time in `lib/books/yearstats.js` (tested in `test/yearstats.test.js`); the page is `src/books-year.njk` with `src/css/books-year.css`, built from the same Goodreads data as the shelf.
+
 ## 7. Reviews & comments
 
 ### 7.1 Two kinds of writing, kept distinct
@@ -589,6 +605,9 @@ All images are rendered from the interactive prototype with the real fonts. Book
 | 22 | Large years | Fold to 2 shelves + peek. **Folded = sorted by rating, then read date**; expanded = all by read date; books glide between orders. Filters expand everything; jump-to-year row |
 | 23 | My own notes on the site | **Author mode** via magic-link sign-in. My notes are auto-approved and **pinned in "dana's notes"** (journal-style, newest first); inline moderation |
 | 24 | Notes durability | Postgres (survives restarts) + **nightly export to Git** (`notes.json`) + static rendering + weekly `pg_dump`. Confirm the DB plan is persistent |
+| 25 | Per-year pages | **Reading card** per finished year (§6.8). No page for the year in progress; DNF books excluded |
+| 26 | Favorite authors on the reading card | Both **most read** and **highest rated (2+ books)**, merged when they're the same authors |
+| 27 | Genres | **Not shown.** Goodreads RSS has none; Open Library matched ~53% of 2025 books with some wrong genres; tagging by hand was too much upkeep |
 
 ## 14. Open questions
 
@@ -613,6 +632,10 @@ Directions that were tried in the prototype and dropped, and why. Where the orig
 | R11 | **Slow-motion toggle** (4× slower animations) | Removed entirely | Annoying; it was only a review tool and never meant to ship |
 | R12 | Folded years showing the **first 2 shelves by date** | Folded = top rated first, expanded = by date | Folded view should show the best books |
 | R13 | Heading **font switcher** in the prototype | Removed after choosing | Prototype-only comparison tool |
+| R14 | Reading card: **"as long as 17 Housemaid's Weddings"** comparison bars for biggest vs smallest | Pages-per-month chart | Didn't add much |
+| R15 | Reading card: **ruled lines behind the text** (text sat on top of lines) | Lines just under each row | Looked crossed out |
+| R16 | Pages-per-month blocks in **each book's spine color** | Terra, solid for loved books | Didn't match the site |
+| R17 | **Genres** on the card and per month (Open Library subjects, or hand-filled) | Left out | Data too patchy to trust |
 
 No images were kept for R7–R11; those early screens were overwritten while iterating.
 

@@ -7,6 +7,7 @@
   var shelvesEl = document.getElementById("shelves");
   if (!dataEl || !shelvesEl) return;
   var DATA = JSON.parse(dataEl.textContent);
+  var CARDS = DATA.cards || [];
   var MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
   var PALETTE = ["#6b3f2a","#2f4f4a","#a9603a","#d9c7a0","#3b4a63","#7a2e2e","#5c6b3a","#c9a86a","#4a3b52","#e6d9c0","#1f3a3a","#8c5a3c","#b7b39a","#34495e","#9b4f3f","#6e7f6a"];
   function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -137,6 +138,7 @@
       var shown = open ? rows : byRating.slice(0, FOLD_ROWS);
       html += '<section class="year" aria-labelledby="y' + y.year + '"><div class="year-head"><h2 class="yr" id="y' + y.year + '">' + y.year + '</h2>' +
         '<span class="ym">' + y.books.length + ' books' + (flat.length ? " · " + flat.length + " unfinished" : "") + '</span>' +
+        (CARDS.indexOf(y.year) >= 0 ? '<a class="cardlink" href="/books/' + y.year + '/">reading card →</a>' : "") +
         (foldable ? '<span class="sortnote">' + (open ? "all books · by read date" : '<span class="st">★</span> top rated first') + '</span>' : "") +
         '</div><div class="room">';
       function rowHTML(row, peek) {

@@ -42,7 +42,7 @@ extraFonts: https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swa
 <div class="books-fallback">
   {% if books.reading | length %}<h2>currently reading</h2>
   <ul class="bk-grid">{% for b in books.reading %}{{ card(b) }}{% endfor %}</ul>{% endif %}
-  {% for y in books.years %}<h2>{{ y.year }}</h2>
+  {% for y in books.years %}<h2>{{ y.year }}</h2>{% if y.year in books.cardYears %}<p><a href="/books/{{ y.year }}/">{{ y.year }} reading card →</a></p>{% endif %}
   <ul class="bk-grid">{% for b in y.books %}{{ card(b) }}{% endfor %}</ul>{% endfor %}
 </div>
 

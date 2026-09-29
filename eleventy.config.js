@@ -79,6 +79,9 @@ export default function (eleventyConfig) {
     const x = new Date(d);
     return `${String(x.getUTCDate()).padStart(2, "0")} ${["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"][x.getUTCMonth()]}`;
   });
+  eleventyConfig.addFilter("commas", (n) => Number(n || 0).toLocaleString("en-US"));
+  eleventyConfig.addFilter("fixed", (n, d = 1) => Number(n || 0).toFixed(d));
+  eleventyConfig.addFilter("max", (arr) => Math.max(...arr));
   eleventyConfig.addFilter("year", (d) => new Date(d).getUTCFullYear());
   // "3 min read" from the rendered HTML
   eleventyConfig.addFilter("readTime", (html) => {

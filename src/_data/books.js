@@ -10,6 +10,7 @@ import { fetchShelf } from "../../lib/books/fetch.js";
 import { buildLibrary, spineGeometry } from "../../lib/books/goodreads.js";
 import { processCovers } from "../../lib/books/covers.js";
 import { loadReviews } from "../../lib/books/reviews.js";
+import { cardYears, yearCard } from "../../lib/books/yearstats.js";
 
 async function loadNotes() {
   try {
@@ -109,11 +110,18 @@ async function decorate(lib) {
     nc: notes[b.id]?.filter((n) => !n.is_author).length || undefined,
     dn: notes[b.id]?.some((n) => n.is_author) ? 1 : undefined,
   });
+  // Reading cards (/books/<year>/) for finished years, newest first, with links to the neighbouring cards.
+  const cardList = cardYears(years);
+  const cards = cardList.map((year, i) => ({
+    ...yearCard(year, years.find((y) => y.year === year).books),
+    newer: cardList[i - 1] ?? null,
+    older: cardList[i + 1] ?? null,
+  }));
   const payload = JSON.stringify({
-    lovedTotal: lib.lovedTotal, dnfTotal: lib.dnfTotal, foldRows: config.foldRows, notesApi: config.notesApi || null,
+    lovedTotal: lib.lovedTotal, dnfTotal: lib.dnfTotal, foldRows: config.foldRows, notesApi: config.notesApi || null, cards: cardList,
     reading: reading.map(compact), years: years.map((y) => ({ year: y.year, books: y.books.map(compact) })),
   }).replace(/</g, "\\u003c"); // safe inside <script>
-  return { ...lib, years, reading, noCover, foldRows: config.foldRows, payload };
+  return { ...lib, years, reading, noCover, foldRows: config.foldRows, cards, cardYears: cardList, payload };
 }
 
 let memo; // `eleventy --serve` re-runs data files on every change; don't hit Goodreads each time.
