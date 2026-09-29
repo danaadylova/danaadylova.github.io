@@ -349,3 +349,21 @@ html.js body.typed-done .ls-long { opacity: 1; }
 .post-nav a:hover { color: var(--terra); }
 .back { font-size: 0.9rem; margin-top: 1.5rem; }
 .sidenote { color: var(--body); opacity: 0.85; }
+
+/* favorite books in posts ({% favorite %} shortcode): a fan of covers beside the text */
+.favorite { display: grid; grid-template-columns: 11.5rem 1fr; gap: 1.75rem; align-items: start; padding: 1.5rem 0; border-bottom: 1px dashed var(--card-border); }
+.favorite:first-of-type { border-top: 1px dashed var(--card-border); }
+.fav-covers { --w: 86px; position: relative; height: calc(var(--w) * 1.5 + 12px); margin: 4px 0 0 6px; }
+.fav-covers a, .fav-covers span { position: absolute; top: 4px; left: calc(var(--i) * (11.5rem - var(--w) - 14px) / max(var(--n) - 1, 1)); transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * 1.6deg)); transform-origin: bottom center; transition: transform 200ms ease; z-index: calc(20 - var(--i)); }
+.fav-covers a:hover, .fav-covers span:hover, .fav-covers a:focus-visible { transform: translateY(-8px) rotate(0deg); z-index: 30; }
+.fav-covers img { display: block; width: var(--w); aspect-ratio: 2 / 3; object-fit: cover; border-radius: 2px; box-shadow: 2px 3px 0 var(--card-border), 0 6px 14px -8px rgba(40, 25, 10, 0.45); }
+.fav-text > :first-child { margin-top: 0; }
+.fav-text p, .fav-text ul { margin-bottom: 0.5rem; }
+.fav-title { font-family: var(--serif); font-size: 1.4rem; line-height: 1.2; color: var(--ink); }
+.card-links { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); margin-top: 2rem; }
+@media (max-width: 640px) {
+  .favorite { grid-template-columns: 1fr; gap: 0.9rem; }
+  .fav-covers { --w: 68px; width: 15rem; max-width: 100%; }
+  .fav-covers a, .fav-covers span { left: calc(var(--i) * (15rem - var(--w) - 14px) / max(var(--n) - 1, 1)); }
+}
+@media (prefers-reduced-motion: reduce) { .fav-covers a, .fav-covers span { transition: none; } }
