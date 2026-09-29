@@ -24,7 +24,14 @@ See its `CLAUDE.md`.
 | `scripts/books-report.mjs` | Summarizes a build's Goodreads data (used by CI) |
 
 `base.njk` supports per-page front matter: `pageClass`, `extraCss`, `extraJs`, `extraFonts`.
-Headings get `# ` / `## ` prefixes from garden.css; the books page turns that off for its own headings.
+
+**Look (Sep 2026 refresh):** page and post titles (`h1`) are **Instrument Serif** (loaded site-wide in `base.njk`); section headings (`h2`) stay Space Mono with the `## ` prefix; body is Inter. `--muted` is `#7a6b52` (≈5:1 on paper; don't lighten it). The current nav item gets `class="here"` + `aria-current`.
+- **Home** (`src/index.njk`): intro, then an `ls -l` listing whose right column is live (post count, live projects, `books.total` + currently reading, `now_updated` from the "as of Month Year" line in `now.md`).
+- **Blog** (`src/blog.njk`): grouped by year; each post shows an excerpt, `topic` and reading time. **Give every new post a `topic:` in its front matter** (used so far: `books`, `knitting`, `this site`).
+- **Posts** (`src/_includes/post.njk`): meta line `date · N min read · topic`, older/newer links at the end.
+- **Projects** (`src/projects/*.md`): front matter `status`, `link`, `linkLabel`, optional `post` (blog post URL), `order`.
+- Filters in `eleventy.config.js`: `gdate` ("17 Jul 2026"), `dayMonth`, `year`, `readTime`, `excerpt`.
+- CSS/JS URLs carry `?v={{ build.v }}` (`src/_data/build.js`) so a deploy is never hidden by browser cache.
 
 ## Commands
 
