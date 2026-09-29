@@ -10,7 +10,7 @@ eleventyExcludeFromCollections: true
 {% for project in collections.project | sort(false, false, "data.order") %}
 {% set badge = project.data.status.split(" (")[0] if project.data.status else "" %}
 <div class="card project-card">
-  <h2><a class="wikilink" href="{{ project.url }}">{{ project.data.title }}</a>{% if badge %}<span class="status-tag{% if badge == 'live' %} live{% elif badge == 'in progress' %} wip{% endif %}">{{ badge }}</span>{% endif %}</h2>
+  <h2><a class="wikilink" href="{{ project.url }}">{{ project.data.title }}</a>{% if badge %} <span class="status-tag{% if badge == 'live' %} live{% elif badge == 'in progress' %} wip{% endif %}"><span class="status-label">status:</span> {% if badge == "live" %}● {% endif %}{{ badge }}</span>{% endif %}</h2>
   <p>{{ project.data.summary }}</p>
   <div class="project-links">
     {% if project.data.link %}<a class="open-btn" href="{{ project.data.link }}">{{ project.data.linkLabel or "open ↗" }}</a>{% else %}<span class="not-yet">not online yet</span>{% endif %}
