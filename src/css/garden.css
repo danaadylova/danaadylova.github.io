@@ -15,9 +15,36 @@
   --highlight: #f7e9a0;
   --pill-bg: #faece7;
   --pill-ink: #712b13;
+  --wip-ink: #8a6d12;
+  --wip-line: #d9c27a;
   --mono: 'Space Mono', ui-monospace, monospace;
   --sans: 'Inter', system-ui, sans-serif;
   --serif: 'Instrument Serif', Georgia, serif;
+}
+
+/* Evening mode: the same charcoal as /books (books.css sets its own, more detailed palette on html.page-books).
+   Screen only, so printing the resume stays black on white. */
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #0e0d0c;
+    --dot: #1f1c1a;
+    --card: #171514;
+    --card-border: #34302c;
+    --ink: #f0e9dd;
+    --body: #d7d0c4;
+    --muted: #9a9187;
+    --terra: #df8f62;
+    --terra-dark: #e8a57e;
+    --teal: #6cc4a4;
+    --teal-bright: #93dcc1;
+    --highlight: #4a3d17;
+    --pill-bg: #2a1d16;
+    --pill-ink: #e8a57e;
+    --wip-ink: #d8b46e;
+    --wip-line: #6b5a2c;
+  }
+  .note-figure img { filter: brightness(.92); }
 }
 
 html {
@@ -220,10 +247,12 @@ h1[data-typed] { min-height: 1.3em; }
 
 .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
 .pill {
-  background: var(--pill-bg);
-  color: var(--pill-ink);
-  font-size: 0.8rem;
-  padding: 3px 10px;
+  background: transparent;
+  color: var(--terra-dark);
+  border: 1px solid var(--terra);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  padding: 2px 9px;
   border-radius: 999px;
   white-space: nowrap;
 }
@@ -267,7 +296,7 @@ h1[data-typed] { min-height: 1.3em; }
 .status-tag { font-family: var(--mono); font-size: 0.72rem; font-weight: 400; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--card-border); color: var(--muted); vertical-align: middle; margin-left: 0.75rem; white-space: nowrap; }
 .status-tag.live { color: var(--teal); border-color: var(--teal); }
 .status-tag .status-label { color: var(--muted); }
-.status-tag.wip { color: #8a6d12; border-color: #d9c27a; }
+.status-tag.wip { color: var(--wip-ink); border-color: var(--wip-line); }
 .project-links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 0.75rem; font-family: var(--mono); font-size: 0.85rem; }
 .open-btn { text-decoration: none; border: 1px solid var(--terra); color: var(--terra); padding: 3px 10px; border-radius: 4px; box-shadow: 2px 2px 0 var(--card-border); background: var(--paper); }
 .open-btn:hover { background: var(--terra); color: var(--paper); }
