@@ -26,6 +26,9 @@ See its `CLAUDE.md`.
 `base.njk` supports per-page front matter: `pageClass`, `extraCss`, `extraJs`, `extraFonts`.
 
 **Look (Sep 2026 refresh):** page and post titles (`h1`) are **Instrument Serif** (loaded site-wide in `base.njk`); section headings (`h2`) stay Space Mono with the `## ` prefix; body is Inter. `--muted` is `#7a6b52` (≈5:1 on paper; don't lighten it). The current nav item gets `class="here"` + `aria-current`.
+- **Evening mode everywhere:** `garden.css` redefines the color tokens under `@media screen and (prefers-color-scheme: dark)` with the /books charcoal palette (screen only, so printing stays light). Use tokens, never literal colors, in new CSS. `books.css` keeps its own richer palette on `html.page-books`.
+- **/now** (`src/now.md`, Liquid): keep the "as of Month Year" line current; the currently-reading book is filled in live from `books.reading`.
+- Resume skills (`.pill`) are terra outlines.
 - **Home** (`src/index.njk`): intro, then an `ls -l` listing whose right column is live (post count, live projects, `books.total` + currently reading, `now_updated` from the "as of Month Year" line in `now.md`).
 - **Blog** (`src/blog.njk`): grouped by year; each post shows an excerpt, `topic` and reading time. **Give every new post a `topic:` in its front matter** (used so far: `books`, `knitting`, `this site`).
 - **Posts** (`src/_includes/post.njk`): meta line `date · N min read · topic`, older/newer links at the end.
