@@ -13,7 +13,7 @@
   <link rel="alternate" type="application/atom+xml" title="dana adylova — notes" href="/feed.xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
 {% if extraFonts %}  <link href="{{ extraFonts }}" rel="stylesheet" />
 {% endif %}  <link rel="stylesheet" href="/css/garden.css?v={{ build.v }}" />
 {% if extraCss %}  <link rel="stylesheet" href="{{ extraCss }}?v={{ build.v }}" />
@@ -24,11 +24,11 @@
   <header class="site-header">
     <a class="prompt" href="/">~/dana <span class="dollar">$</span></a>
     <nav class="folders" aria-label="Site">
-      <a href="/blog/" {% if '/blog' in page.url %}class="here"{% endif %}>/blog</a>
-      <a href="/projects/" {% if '/projects' in page.url %}class="here"{% endif %}>/projects</a>
-      <a href="/books/" {% if '/books' in page.url %}class="here"{% endif %}>/books</a>
-      <a href="/resume/" {% if '/resume' in page.url %}class="here"{% endif %}>/resume</a>
-      <a href="/now/" {% if '/now' in page.url %}class="here"{% endif %}>/now</a>
+      <a href="/blog/" {% if '/blog' in page.url %}class="here" aria-current="page"{% endif %}>/blog</a>
+      <a href="/projects/" {% if '/projects' in page.url %}class="here" aria-current="page"{% endif %}>/projects</a>
+      <a href="/books/" {% if '/books' in page.url %}class="here" aria-current="page"{% endif %}>/books</a>
+      <a href="/resume/" {% if '/resume' in page.url %}class="here" aria-current="page"{% endif %}>/resume</a>
+      <a href="/now/" {% if '/now' in page.url %}class="here" aria-current="page"{% endif %}>/now</a>
     </nav>
   </header>
   <main>
@@ -40,7 +40,7 @@
       <a href="mailto:danaadylova@gmail.com">email</a> ·
       <a href="/feed.xml">rss</a>
     </span>
-    <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">sound: off</button>
+    <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">typing sounds: off</button>
   </footer>
   <script src="/js/garden.js?v={{ build.v }}"></script>
 {% if extraJs %}  <script src="{{ extraJs }}?v={{ build.v }}" defer></script>
