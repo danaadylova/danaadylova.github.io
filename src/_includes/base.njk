@@ -15,8 +15,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
 {% if extraFonts %}  <link href="{{ extraFonts }}" rel="stylesheet" />
-{% endif %}  <link rel="stylesheet" href="/css/garden.css" />
-{% if extraCss %}  <link rel="stylesheet" href="{{ extraCss }}" />
+{% endif %}  <link rel="stylesheet" href="/css/garden.css?v={{ build.v }}" />
+{% if extraCss %}  <link rel="stylesheet" href="{{ extraCss }}?v={{ build.v }}" />
 {% endif %}
   <script>document.documentElement.className += " js";</script>
 </head>
@@ -42,8 +42,8 @@
     </span>
     <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">sound: off</button>
   </footer>
-  <script src="/js/garden.js"></script>
-{% if extraJs %}  <script src="{{ extraJs }}" defer></script>
+  <script src="/js/garden.js?v={{ build.v }}"></script>
+{% if extraJs %}  <script src="{{ extraJs }}?v={{ build.v }}" defer></script>
 {% endif %}
 </body>
 </html>
