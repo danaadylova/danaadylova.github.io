@@ -123,6 +123,8 @@ html:not(.js) .tools, html:not(.js) .jump { display: none; }
 .yr.words { font-size: 46px; }
 .yr.words em { font-style: italic; color: var(--terra); }
 .ym { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.cardlink { font-family: var(--mono); font-size: 12px; color: var(--terra-ink, var(--terra)); text-decoration: none; border-bottom: 1px dashed currentColor; white-space: nowrap; }
+.cardlink:hover { border-bottom-style: solid; }
 .room {
   position: relative; overflow: hidden; border-radius: 14px;
   background: linear-gradient(to bottom, transparent 55%, rgba(94,70,40,.05)), var(--wall);

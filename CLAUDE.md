@@ -19,7 +19,7 @@ See its `CLAUDE.md`.
 | `lib/books/` | Pipeline code: `goodreads.js` (RSS parse/normalize/merge), `fetch.js` (paginated fetch), `covers.js` + `color.js` (download/resize covers, cover-derived spine colors with AA contrast), `reviews.js` (Markdown reviews), `config.js` (**settings: Goodreads user id, shelves, fold rows, notes API URL**) |
 | `src/reviews/*.md` | Dana's own reviews (front matter `book_id`). Not output as pages (`reviews.json` → `permalink: false`) |
 | `notes/notes.json` | Nightly backup of all approved margin notes (written by `notes-export.yml`); also rendered into the page as a fallback |
-| `test/` | `node --test` suites (`npm test`, 17 tests). Fixtures mimic Goodreads RSS exactly |
+| `test/` | `node --test` suites (`npm test`, 21 tests). Fixtures mimic Goodreads RSS exactly |
 | `docs/prd-books.md` | **The /books PRD**: design, decisions log, mockups (`docs/prd-books/*.jpg`), rejected directions, implementation status. Read it before changing /books |
 | `scripts/books-report.mjs` | Summarizes a build's Goodreads data (used by CI) |
 
@@ -40,7 +40,7 @@ See its `CLAUDE.md`.
 
 ```bash
 npm ci
-npm test                 # 17 tests
+npm test                 # 21 tests
 npm run serve            # http://localhost:8080 (fetches Goodreads live)
 npm run serve:offline    # BOOKS_FIXTURE=1: sample books, no network needed
 BOOKS_NOTES_API=http://localhost:8000/site npm run build   # point notes at a local API
@@ -62,6 +62,7 @@ BOOKS_NOTES_API=http://localhost:8000/site npm run build   # point notes at a lo
   - Filters all / loved / unfinished dim books without moving them.
   - Clicking a book pulls it out and turns it to its cover, then opens the reading panel.
   - Evening mode follows `prefers-color-scheme` (charcoal, not brown). Reduced-motion and no-JS fallbacks are included.
+- **Reading cards:** `/books/<year>/` for each finished year (`src/books-year.njk`, stats in `lib/books/yearstats.js`, styles `src/css/books-year.css`, PRD §6.8). `books.cards` / `books.cardYears` in the global data; the shelf adds a "reading card →" link via `DATA.cards`.
 - **Margin notes:** the panel talks to `lib/books/config.js` → `notesApi` (`https://unraveled.danaadylova.com/site`). Set it to `null` to show "coming soon".
   - Visitor notes are pending until approved.
   - Dana signs in via an emailed link ("sign in" at the bottom of /books). Her notes are pinned in "dana's notes", and she gets inline approve/reject/hide and edit/delete.
