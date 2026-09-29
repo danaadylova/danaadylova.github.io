@@ -81,7 +81,7 @@
 
   var btn = document.getElementById("sound-toggle");
   function label() {
-    if (btn) btn.textContent = "sound: " + (enabled ? "on" : "off");
+    if (btn) btn.textContent = "typing sounds: " + (enabled ? "on" : "off");
   }
   if (btn) {
     label();

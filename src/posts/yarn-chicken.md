@@ -1,6 +1,7 @@
 ---
 title: on knitting your first (bad) sweater
 date: 2026-07-17
+topic: knitting
 ---
 I think there are a lot of people who don’t start knitting or sewing - one of those “difficult” hobbies - because there is a misconception that it will be way too difficult to learn. That has been stopping me for a while until I bought some yarn on a whim and decided to knit a sweater. Turns out it was a horrible idea - I did almost everything wrong on my first try. The color was horrible, I got the worst needles possible, and in the end I didn’t even have enough of the yarn to finish this project, so my sleeves did not match the body in color<sup class="sidenote-num">1</sup> <span class="sidenote"><span class="sidenote-tag">1</span> (note: yarn chicken is when you don’t get enough yarn for the project, and in a constant state of dread that there will not be enough to finish the second sleeve. I’d be a champion in yarn chicken if it was a sport)</span>. But I still enjoyed the process, so I tried again.
 
