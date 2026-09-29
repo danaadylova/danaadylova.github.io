@@ -259,3 +259,15 @@ h1[data-typed] { min-height: 1.3em; }
   .card { box-shadow: none; }
   a { text-decoration: none; color: inherit; }
 }
+
+/* /projects cards: title → write-up, button → the real thing */
+.project-card h2 { margin-top: 0; }
+.project-card > p { margin-bottom: 0; }
+.status-tag { font-family: var(--mono); font-size: 0.72rem; font-weight: 400; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--card-border); color: var(--muted); vertical-align: middle; margin-left: 0.5rem; white-space: nowrap; }
+.status-tag.live { color: var(--teal); border-color: var(--teal); }
+.status-tag.live::before { content: '● '; }
+.status-tag.wip { color: #8a6d12; border-color: #d9c27a; }
+.project-links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 0.75rem; font-family: var(--mono); font-size: 0.85rem; }
+.open-btn { text-decoration: none; border: 1px solid var(--terra); color: var(--terra); padding: 3px 10px; border-radius: 4px; box-shadow: 2px 2px 0 var(--card-border); background: var(--paper); }
+.open-btn:hover { background: var(--terra); color: var(--paper); }
+.project-links .not-yet { color: var(--muted); }
