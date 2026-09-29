@@ -70,14 +70,31 @@ export default function (eleventyConfig) {
     return JSON.stringify(out);
   });
 
-  eleventyConfig.addFilter("gdate", (d) =>
-    new Date(d).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      timeZone: "UTC",
-    })
-  );
+  eleventyConfig.addFilter("gdate", (d) => {
+    const x = new Date(d);
+    const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][x.getUTCMonth()];
+    return `${String(x.getUTCDate()).padStart(2, "0")} ${mon} ${x.getUTCFullYear()}`;
+  });
+  eleventyConfig.addFilter("dayMonth", (d) => {
+    const x = new Date(d);
+    return `${String(x.getUTCDate()).padStart(2, "0")} ${["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"][x.getUTCMonth()]}`;
+  });
+  eleventyConfig.addFilter("year", (d) => new Date(d).getUTCFullYear());
+  // "3 min read" from the rendered HTML
+  eleventyConfig.addFilter("readTime", (html) => {
+    const words = String(html || "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.round(words / 200));
+  });
+  // First sentence or two of a post, without sidenotes or markup, for the blog list
+  eleventyConfig.addFilter("excerpt", (html, max = 150) => {
+    const text = String(html || "").replace(/<span class="sidenote">(?:<span[^>]*>[^<]*<\/span>|[^<])*<\/span>/g, "")
+      .replace(/<sup[\s\S]*?<\/sup>/g, "").replace(/<figure[\s\S]*?<\/figure>/g, "")
+      .replace(/<[^>]+>/g, " ").replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, a, b) => (b || a).replace(/-/g, " "))
+      .replace(/&#39;/g, "’").replace(/\s+/g, " ").trim();
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    return cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:.\-–—]$/, "") + "…";
+  });
 
   return {
     dir: { input: "src", includes: "_includes", output: "_site" },

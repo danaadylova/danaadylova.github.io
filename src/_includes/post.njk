@@ -1,8 +1,10 @@
 ---
 layout: base.njk
 ---
+{%- set older = collections.post | getPreviousCollectionItem %}
+{%- set newer = collections.post | getNextCollectionItem %}
 <article class="note">
-  <p class="note-meta">Entry · {{ page.date | gdate }}</p>
+  <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% if topic %} · <span class="topic">{{ topic }}</span>{% endif %}</p>
   <h1 data-typed>{{ title }}</h1>
   {{ content | safe }}
   {% if backlinks and backlinks.length %}
@@ -12,4 +14,9 @@ layout: base.njk
     {%- endfor %}
   </p>
   {% endif %}
+  <nav class="post-nav" aria-label="More notes">
+    <div>{% if older %}<span class="dir">← older</span><a href="{{ older.url }}">{{ older.data.title }}</a>{% endif %}</div>
+    <div class="newer">{% if newer %}<span class="dir">newer →</span><a href="{{ newer.url }}">{{ newer.data.title }}</a>{% endif %}</div>
+  </nav>
+  <p class="back"><a class="wikilink" href="/blog/">all notes</a></p>
 </article>
