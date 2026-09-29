@@ -1,6 +1,7 @@
 ---
 title: planting this garden
 date: 2026-07-17
+topic: this site
 ---
 This site used to just point at [[unraveled-makes]], but I've been wanting a place to put my thoughts, recent projects, and keep a digital journal. I've always been fascinated by blogs, and even though it's not as popular anymore as it was 10/20 years ago, I'd like to give it a go.
 
