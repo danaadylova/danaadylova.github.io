@@ -73,7 +73,10 @@ async function loadLibrary() {
 
 async function decorate(lib) {
   const all = [...lib.reading, ...lib.years.flatMap((y) => y.books)];
-  const covers = await processCovers(all, { dir: path.join(config.cacheDir, "covers"), log });
+  // Undated books stay off the shelf (decision #3), but posts can still show their covers (the {% favorite %} shortcode).
+  const undatedWithCovers = (lib.skippedUndated || []).filter((b) => b.covers?.length);
+  const covers = await processCovers([...all, ...undatedWithCovers], { dir: path.join(config.cacheDir, "covers"), log });
+  const undated = (lib.skippedUndated || []).map((b) => ({ id: b.id, title: b.title, author: b.author, cover: covers.get(b.id)?.cover ?? null }));
   const withLook = (b) => {
     const c = covers.get(b.id) || {};
     const when = b.when ? new Date(b.when) : null;
@@ -121,7 +124,7 @@ async function decorate(lib) {
     lovedTotal: lib.lovedTotal, dnfTotal: lib.dnfTotal, foldRows: config.foldRows, notesApi: config.notesApi || null, cards: cardList,
     reading: reading.map(compact), years: years.map((y) => ({ year: y.year, books: y.books.map(compact) })),
   }).replace(/</g, "\\u003c"); // safe inside <script>
-  return { ...lib, years, reading, noCover, foldRows: config.foldRows, cards, cardYears: cardList, payload };
+  return { ...lib, years, reading, undated, noCover, foldRows: config.foldRows, cards, cardYears: cardList, payload };
 }
 
 let memo; // `eleventy --serve` re-runs data files on every change; don't hit Goodreads each time.

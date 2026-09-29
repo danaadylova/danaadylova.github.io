@@ -1,3 +1,4 @@
+import markdownIt from "markdown-it";
 import { feedPlugin } from "@11ty/eleventy-plugin-rss";
 
 const slugMap = new Map();
@@ -78,6 +79,21 @@ export default function (eleventyConfig) {
   eleventyConfig.addFilter("dayMonth", (d) => {
     const x = new Date(d);
     return `${String(x.getUTCDate()).padStart(2, "0")} ${["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"][x.getUTCMonth()]}`;
+  });
+  // {% favorite "id id id" %}markdown{% endfavorite %}: a favourite book or series in a post, with a fan of its
+  // covers from the /books shelf (each links to that book on /books). Ids are Goodreads ids; undated books (not on the
+  // shelf) still show their cover, without a link; ids with no cover are skipped. Posts using it need `templateEngineOverride: njk,md`.
+  const favMd = markdownIt({ html: true, typographer: true });
+  eleventyConfig.addPairedShortcode("favorite", function (content, ids) {
+    const books = this.ctx?.books || this.ctx?.environments?.books || {};
+    const all = new Map([...(books.undated || []), ...(books.reading || []), ...(books.years || []).flatMap((y) => y.books)].map((b) => [b.id, b]));
+    const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const found = String(ids).split(/[\s,]+/).filter(Boolean).map((id) => all.get(id)).filter((b) => b && b.cover);
+    const covers = found.map((b, i) =>
+      (b.year ? `<a href="/books/#b-${b.id}"` : `<span`) + ` style="--i:${i}" title="${esc(b.title)}"><img src="${b.cover}.webp" alt="${esc(b.title)}" loading="lazy">` + (b.year ? `</a>` : `</span>`)).join("");
+    // a first line that is only bold text becomes the entry's title
+    const text = favMd.render(content.trim()).replace(/^<p><strong>([\s\S]*?)<\/strong><\/p>/, '<p class="fav-title">$1</p>');
+    return `<div class="favorite"><div class="fav-covers" style="--n:${found.length}">${covers}</div><div class="fav-text">${text}</div></div>`;
   });
   eleventyConfig.addFilter("commas", (n) => Number(n || 0).toLocaleString("en-US"));
   eleventyConfig.addFilter("fixed", (n, d = 1) => Number(n || 0).toFixed(d));
