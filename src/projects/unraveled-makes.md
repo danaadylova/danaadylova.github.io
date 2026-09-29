@@ -4,6 +4,8 @@ summary: Find knitting patterns that match your gauge, sorted by what knitters a
 status: live
 materials: ["FastAPI", "Ravelry API", "Railway"]
 link: https://unraveled.danaadylova.com
+linkLabel: open the site ↗
+order: 1
 ---
 Ravelry has tens of thousands of knitting patterns, but finding one that matches the yarn already in your hands is surprisingly hard. unraveled makes searches by <mark>gauge</mark> — the stitches-per-inch fingerprint of your swatch — and ranks results by how much knitters actually loved making them.
 

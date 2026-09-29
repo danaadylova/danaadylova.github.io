@@ -4,6 +4,8 @@ summary: The scrappy script that started it all — matching Ravelry patterns to
 status: retired (grew up into unraveled makes)
 materials: ["Python", "Ravelry API"]
 link: https://github.com/danaadylova/ravelry-gauge-matcher
+linkLabel: see the code ↗
+order: 4
 ---
 Before [[unraveled-makes]] had a URL, it was a Python script that took a gauge and spat out pattern matches from the Ravelry API. No UI, no hosting, just a terminal and a lot of yarn-adjacent joy.
 
