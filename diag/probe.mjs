@@ -1,19 +1,28 @@
-// One-off probe: what genre data do Open Library and Google Books give for Dana's 2025 books?
+// One-off probe: do Goodreads book pages expose genres we can read at build time?
 import { readFileSync } from "node:fs";
 const books = JSON.parse(readFileSync(new URL("./books2025.json", import.meta.url)));
-const UA = { "User-Agent": "danaadylova.com genre probe (danaadylova@gmail.com)" };
+const UA = { "User-Agent": "Mozilla/5.0 (compatible; danaadylova.com bookshelf build; +https://danaadylova.com/books/)" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const note = (t, m) => console.log(`::notice title=${t}::${String(m).replace(/\n/g, " ").slice(0, 900)}`);
-let ol = 0, gb = 0;
+let ok = 0, status = {};
 const rows = [];
 for (const b of books) {
-  const q = new URLSearchParams({ title: b.t.split(/[:(]/)[0].trim(), author: b.a, fields: "subject,title", limit: "1" });
-  let subj = [], cats = [];
-  try { const r = await fetch(`https://openlibrary.org/search.json?${q}`, { headers: UA }); const j = await r.json(); subj = j.docs?.[0]?.subject || []; } catch (e) { subj = ["ERR " + e.message]; }
-  try { const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`intitle:${b.t.split(/[:(]/)[0].trim()} inauthor:${b.a.split(" ").pop()}`)}&maxResults=1`); const j = await r.json(); cats = j.items?.[0]?.volumeInfo?.categories || []; } catch (e) { cats = ["ERR"]; }
-  if (subj.length) ol++; if (cats.length) gb++;
-  rows.push(`${b.t.slice(0, 40)} | OL: ${subj.slice(0, 12).join("; ")} | GB: ${cats.join("; ")}`);
-  await sleep(400);
+  let g = [];
+  try {
+    const r = await fetch(`https://www.goodreads.com/book/show/${b.id}`, { headers: UA });
+    status[r.status] = (status[r.status] || 0) + 1;
+    const html = await r.text();
+    const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+    if (m) {
+      const s = m[1];
+      const re = /"genre":\{"__typename":"Genre","name":"([^"]+)"/g; let x;
+      while ((x = re.exec(s))) if (!g.includes(x[1])) g.push(x[1]);
+    }
+    if (!g.length) { const re2 = /\/genres\/[a-z0-9-]+"[^>]*>(?:<span[^>]*>)?([^<]+)</g; let y; while ((y = re2.exec(html))) if (!g.includes(y[1])) g.push(y[1]); }
+  } catch (e) { g = ["ERR " + e.message]; }
+  if (g.length) ok++;
+  rows.push(`${b.t.slice(0, 34)}: ${g.slice(0, 6).join(", ")}`);
+  await sleep(1500);
 }
-note("coverage", `${books.length} books · Open Library subjects for ${ol} · Google Books categories for ${gb}`);
-for (let i = 0; i < rows.length; i += 3) note(`books ${i + 1}-${i + 3}`, rows.slice(i, i + 3).join("  ||  "));
+note("coverage", `${books.length} books · genres found for ${ok} · http ${JSON.stringify(status)}`);
+for (let i = 0; i < rows.length; i += 6) note(`books ${i + 1}-${i + 6}`, rows.slice(i, i + 6).join("  ||  "));
