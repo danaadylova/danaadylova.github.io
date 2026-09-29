@@ -32,6 +32,7 @@ See its `CLAUDE.md`.
 - **Home** (`src/index.njk`): intro, then an `ls -l` listing whose right column is live (post count, live projects, `books.total` + currently reading, `now_updated` from the "as of Month Year" line in `now.md`).
 - **Blog** (`src/blog.njk`): grouped by year; each post shows an excerpt, `topic` and reading time. **Give every new post a `topic:` in its front matter** (used so far: `books`, `knitting`, `this site`).
 - **Posts** (`src/_includes/post.njk`): meta line `date · N min read · topic`, older/newer links at the end.
+- **Book covers in posts:** `{% favorite "<goodreads ids>" %}markdown{% endfavorite %}` (in `eleventy.config.js`) shows a fan of covers beside the entry; a first line that is only bold becomes the entry title. Posts using it need `templateEngineOverride: njk,md` (see `src/posts/get-to-know-me-in-books.md`). Covers for undated books (`books.undated`) are downloaded too, shown without a link since they aren't on /books.
 - **Projects** (`src/projects/*.md`): front matter `status`, `link`, `linkLabel`, optional `post` (blog post URL), `order`.
 - Filters in `eleventy.config.js`: `gdate` ("17 Jul 2026"), `dayMonth`, `year`, `readTime`, `excerpt`.
 - CSS/JS URLs carry `?v={{ build.v }}` (`src/_data/build.js`) so a deploy is never hidden by browser cache.
