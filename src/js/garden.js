@@ -117,9 +117,11 @@
     if (kb === "ready") document.dispatchEvent(new CustomEvent("garden:key", { detail: { ch: ch } }));
   }
 
+  var promptBusy = false;
   function typeOut(el) {
     var chars = Array.from(el.getAttribute("data-text") || el.textContent);
     var isPrompt = el === prompt;
+    if (isPrompt) promptBusy = true;
     var base = isPrompt ? 85 : 45;
     var jitter = isPrompt ? 95 : 40;
     el.textContent = "";
@@ -137,15 +139,23 @@
         setTimeout(function () {
           kbKey("\n");
           thock(true, false);
-          setTimeout(function () { document.body.classList.add("typed-done"); }, 180);
+          setTimeout(function () { document.body.classList.add("typed-done"); promptBusy = false; }, 180);
         }, 420);
       } else if (isPrompt) {
         document.body.classList.add("typed-done");
+        promptBusy = false;
       } else {
         el.classList.remove("typing");
       }
     })();
   }
+
+  // retro mode (retro.js) swaps the keyboard for the typewriter, which then types the prompt again
+  window.gardenRetype = function () {
+    if (!prompt || promptBusy) return;
+    kb = "ready";
+    typeOut(prompt);
+  };
 
   if (!targets.length) {
     document.body.classList.add("typed-done");
