@@ -608,6 +608,7 @@ All images are rendered from the interactive prototype with the real fonts. Book
 | 25 | Per-year pages | **Reading card** per finished year (§6.8). No page for the year in progress; DNF books excluded |
 | 26 | Favorite authors on the reading card | Both **most read** and **highest rated (2+ books)**, merged when they're the same authors |
 | 27 | Genres | **Not shown.** Goodreads RSS has none; Open Library matched ~53% of 2025 books with some wrong genres; tagging by hand was too much upkeep |
+| 28 | Heading font (revisits #16) | **IM Fell English** everywhere Instrument Serif was (Instrument Serif felt too AI-common). "currently reading" in one style; shelf headings (years 34px, currently reading 32px) smaller than the page title |
 
 ## 14. Open questions
 
