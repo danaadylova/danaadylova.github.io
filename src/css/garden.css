@@ -231,11 +231,6 @@ html:not(.js) .kb { display: none; }
    and the whole page goes dark: warmer and browner than evening mode, like a desk under a lamp */
 html.retro {
   color-scheme: dark;
-  /* the prototype's desk at night: a warm pool of lamp light behind the typewriter, near-black at the edges, no dot grid */
-  background-color: #110e0b;
-  background-image: radial-gradient(ellipse 70% 52% at 50% 36%, #33271c 0%, #1d1712 45%, rgba(17, 14, 11, 0) 78%);
-  background-size: auto;
-  background-attachment: fixed;
   --paper: #110e0b;
   --dot: transparent;
   --card: #1c1813;
@@ -253,6 +248,15 @@ html.retro {
   --pill-ink: #e8a57e;
   --wip-ink: #d8b46e;
   --wip-line: #6b5a2c;
+}
+/* the prototype's desk at night: a warm pool of lamp light behind the typewriter, near-black at the edges, no dot grid.
+   Painted on body as well as html (fixed to the viewport, so the two line up exactly): a page host that gives
+   body its own background, like the preview, would otherwise cover it and leave retro mode white. */
+html.retro, html.retro body {
+  background-color: #110e0b !important;
+  background-image: radial-gradient(ellipse 70% 52% at 50% 36%, #33271c 0%, #1d1712 45%, rgba(17, 14, 11, 0) 78%) !important;
+  background-size: auto !important;
+  background-attachment: fixed !important;
 }
 .tw { display: none; width: 100%; aspect-ratio: 16 / 10.5; margin: 0.25rem 0 -0.5rem; }
 .tw canvas {
