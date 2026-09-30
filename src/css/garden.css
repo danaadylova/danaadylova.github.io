@@ -225,7 +225,56 @@ h1[data-typed] { min-height: 1.3em; }
 .kb canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 html:not(.js) .kb { display: none; }
 @media (max-width: 519px) { .kb { aspect-ratio: 1.8 / 1; } }
-@media print { .kb { display: none; } }
+@media print { .kb, .tw, .retro-row { display: none; } }
+
+/* retro mode (home page switch, retro.js + typewriter.js): the typewriter instead of the keyboard,
+   and the whole page goes dark: warmer and browner than evening mode, like a desk under a lamp */
+html.retro {
+  color-scheme: dark;
+  --paper: #14110e;
+  --dot: #241e18;
+  --card: #1c1813;
+  --card-border: #3a3129;
+  --ink: #f0e6d4;
+  --body: #d9cfbf;
+  --muted: #a1937e;
+  --terra: #df8f62;
+  --terra-dark: #e8a57e;
+  --teal: #6cc4a4;
+  --teal-bright: #93dcc1;
+  --olive: #b5b26e;
+  --highlight: #4a3d17;
+  --pill-bg: #2a1d16;
+  --pill-ink: #e8a57e;
+  --wip-ink: #d8b46e;
+  --wip-line: #6b5a2c;
+}
+.tw { display: none; width: 100%; aspect-ratio: 16 / 10.5; margin: 0.25rem 0 -0.5rem; }
+.tw canvas {
+  display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  /* the lamp throws a long shadow back and to the right: fade it out before the edges instead of cutting it off */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 92%, transparent), linear-gradient(to bottom, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 92%, transparent), linear-gradient(to bottom, #000 86%, transparent);
+  mask-composite: intersect;
+}
+html.retro .tw { display: block; }
+html.retro .tw ~ .kb { display: none; } /* if the typewriter can't run, its stage is removed and the keyboard stays */
+@media (max-width: 519px) { .tw { aspect-ratio: 1.25 / 1; } }
+html.retro-fade body, html.retro-fade body *:not(.track):not(.knob) { transition: background-color .5s ease, color .5s ease, border-color .5s ease !important; }
+html.retro-fade .tw, html.retro-fade .kb { animation: stage-in .6s ease both; }
+@keyframes stage-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { html.retro-fade .tw, html.retro-fade .kb { animation: none; } }
+
+.retro-row { display: flex; justify-content: flex-end; margin: 0.75rem 0 -0.75rem; position: relative; z-index: 1; }
+html:not(.js) .retro-row { display: none; }
+.retro-switch { display: inline-flex; align-items: center; gap: 0.55rem; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); background: none; border: none; padding: 0.25rem 0; cursor: pointer; }
+.retro-switch:hover, .retro-switch:focus-visible { color: var(--terra); outline: none; }
+.retro-switch .track { position: relative; width: 2.1rem; height: 1.15rem; border-radius: 999px; border: 1px solid var(--card-border); background: var(--card); transition: background-color .3s ease, border-color .3s ease; }
+.retro-switch .knob { position: absolute; top: 2px; left: 2px; width: calc(1.15rem - 6px); height: calc(1.15rem - 6px); border-radius: 50%; background: var(--muted); transition: transform .3s cubic-bezier(.3, 1.4, .5, 1), background-color .3s ease; }
+.retro-switch:focus-visible .track { outline: 2px solid var(--terra); outline-offset: 2px; }
+.retro-switch[aria-checked="true"] .track { background: var(--terra); border-color: var(--terra); }
+.retro-switch[aria-checked="true"] .knob { transform: translateX(0.95rem); background: var(--paper); }
 .intro em { font-style: normal; color: inherit; }
 
 .note-meta { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-bottom: -0.5rem; }

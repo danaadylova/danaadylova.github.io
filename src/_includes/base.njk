@@ -20,6 +20,8 @@
 {% if extraCss %}  <link rel="stylesheet" href="{{ extraCss }}?v={{ build.v }}" />
 {% endif %}
   <script>document.documentElement.className += " js";</script>
+{% if retroSwitch %}  <script>try { if (localStorage.getItem("garden-retro") === "on") document.documentElement.classList.add("retro"); } catch (e) {}</script>
+{% endif %}
 </head>
 <body>
   <header class="site-header">

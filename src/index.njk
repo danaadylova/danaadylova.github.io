@@ -2,11 +2,15 @@
 layout: base.njk
 title: home
 eleventyExcludeFromCollections: true
+retroSwitch: true
+extraFonts: https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap
 ---
 {%- set posts = collections.post | reverse -%}
 {%- set live = [] -%}{%- for p in collections.project -%}{%- if p.data.status == "live" -%}{%- set live = (live.push(p), live) -%}{%- endif -%}{%- endfor -%}
 <p class="intro">Hi, I'm Dana — developer and crafter in the Bay Area. I like building small, useful things, usually related to <em>code</em> and <em>yarn</em>.</p>
 
+<div class="retro-row"><button type="button" class="retro-switch" role="switch" aria-checked="false" data-retro-switch><span class="track" aria-hidden="true"><span class="knob"></span></span>retro mode</button></div>
+<div class="tw" data-tw aria-hidden="true"></div>
 <div class="kb" data-kb aria-hidden="true"></div>
 <p class="typed-line"><span id="typed" data-typed data-text="~/dana $ ls -l">~/dana $ ls -l</span></p>
 <ul class="ls-long" aria-label="What's on this site">
@@ -27,3 +31,5 @@ eleventyExcludeFromCollections: true
 
 <script src="/js/vendor/three.r128.min.js" defer></script>
 <script src="/js/keyboard.js?v={{ build.v }}" defer></script>
+<script src="/js/typewriter.js?v={{ build.v }}" defer></script>
+<script src="/js/retro.js?v={{ build.v }}" defer></script>
