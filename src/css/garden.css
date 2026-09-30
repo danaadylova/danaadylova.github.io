@@ -12,6 +12,7 @@
   --terra-dark: #993c1d;
   --teal: #0f6e56;
   --teal-bright: #1d9e75;
+  --olive: #6e6a33; /* the home page keyboard's case as it renders; 5.3:1 on paper */
   --highlight: #f7e9a0;
   --pill-bg: #faece7;
   --pill-ink: #712b13;
@@ -38,6 +39,7 @@
     --terra-dark: #e8a57e;
     --teal: #6cc4a4;
     --teal-bright: #93dcc1;
+    --olive: #b5b26e; /* 8.8:1 on evening paper */
     --highlight: #4a3d17;
     --pill-bg: #2a1d16;
     --pill-ink: #e8a57e;
@@ -217,6 +219,13 @@ h1[data-typed] { min-height: 1.3em; }
 .js body.typed-done .ls-output, html.js body.typed-done .ls-output { opacity: 1; }
 
 .intro { font-size: 1.05rem; }
+
+/* the little 3D keyboard on the home page (keyboard.js); it types the prompt below it */
+.kb { width: 100%; aspect-ratio: 2.2 / 1; margin: 0.75rem 0 -0.25rem; }
+.kb canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+html:not(.js) .kb { display: none; }
+@media (max-width: 519px) { .kb { aspect-ratio: 1.8 / 1; } }
+@media print { .kb { display: none; } }
 .intro em { font-style: normal; color: inherit; }
 
 .note-meta { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-bottom: -0.5rem; }
@@ -306,7 +315,7 @@ h1[data-typed] { min-height: 1.3em; }
 .intro { font-size: 1.15rem; margin: 0.5rem 0 1.5rem; color: var(--ink); }
 .ls-long { list-style: none; padding: 0; margin: 0 0 2rem; font-family: var(--mono); font-size: 0.88rem; border-top: 1px dashed var(--card-border); }
 .ls-long li { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: 1rem; align-items: baseline; padding: 0.6rem 0.25rem; border-bottom: 1px dashed var(--card-border); }
-.ls-long a { color: var(--teal); text-decoration: none; font-weight: 700; }
+.ls-long a { color: var(--olive); text-decoration: none; font-weight: 700; }
 .ls-long li:hover { background: var(--card); }
 .ls-long li:hover a { color: var(--terra); }
 .ls-long .what { font-family: var(--sans); color: var(--body); font-size: 0.95rem; }
