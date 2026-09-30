@@ -25,7 +25,7 @@ See its `CLAUDE.md`.
 
 `base.njk` supports per-page front matter: `pageClass`, `extraCss`, `extraJs`, `extraFonts`.
 
-**Look (Sep 2026 refresh):** page and post titles (`h1`) are **Instrument Serif** (loaded site-wide in `base.njk`); section headings (`h2`) stay Space Mono with the `## ` prefix; body is Inter. `--muted` is `#7a6b52` (≈5:1 on paper; don't lighten it). The current nav item gets `class="here"` + `aria-current`.
+**Look (Sep 2026 refresh):** page and post titles (`h1`) are **IM Fell English** (Sep 30 2026, replaced Instrument Serif; loaded site-wide in `base.njk`, `--serif` in garden.css, `--display` in books.css); section headings (`h2`) stay Space Mono with the `## ` prefix; body is Inter. `--muted` is `#7a6b52` (≈5:1 on paper; don't lighten it). The current nav item gets `class="here"` + `aria-current`.
 - **Evening mode everywhere:** `garden.css` redefines the color tokens under `@media screen and (prefers-color-scheme: dark)` with the /books charcoal palette (screen only, so printing stays light). Use tokens, never literal colors, in new CSS. `books.css` keeps its own richer palette on `html.page-books`.
 - **/now** (`src/now.md`, Liquid): keep the "as of Month Year" line current; the currently-reading book is filled in live from `books.reading`.
 - Resume skills (`.pill`) are terra outlines.
@@ -58,7 +58,7 @@ BOOKS_NOTES_API=http://localhost:8000/site npm run build   # point notes at a lo
 - **Freshness:** `deploy.yml` also runs daily at `17 13 * * *` UTC (~6am PT).
 - **UI** (`src/js/books.js`, ported from prototype v9; see PRD §6.0):
   - A "currently reading" shelf (face-out covers + stoneware mug with canvas steam).
-  - Year shelves using Instrument Serif numerals. Years with more than 3 shelves **fold to 2 shelves sorted by rating then date**; "show all" expands to read-date order with FLIP animation.
+  - Year shelves using IM Fell English numerals (old-style figures), smaller than the page title. Years with more than 3 shelves **fold to 2 shelves sorted by rating then date**; "show all" expands to read-date order with FLIP animation.
   - DNF books lie flat in piles. 4★ gets a foil star, 5★ a star plus foil bands.
   - Filters all / loved / unfinished dim books without moving them.
   - Clicking a book pulls it out and turns it to its cover, then opens the reading panel.
