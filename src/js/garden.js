@@ -1,6 +1,7 @@
 (function () {
   var KEY = "garden-sound";
-  var enabled = localStorage.getItem(KEY) === "on";
+  var enabled = false;
+  try { enabled = localStorage.getItem(KEY) === "on"; } catch (e) {}
   var ctx = null;
 
   var P = {
@@ -87,14 +88,34 @@
     label();
     btn.addEventListener("click", function () {
       enabled = !enabled;
-      localStorage.setItem(KEY, enabled ? "on" : "off");
+      try { localStorage.setItem(KEY, enabled ? "on" : "off"); } catch (e) {}
       label();
       if (enabled) thock(false, true);
     });
   }
 
+  window.gardenThock = thock; // the home page keyboard plays the same sound when its keys are clicked
+
   var targets = Array.prototype.slice.call(document.querySelectorAll("[data-typed]"));
   var prompt = document.getElementById("typed");
+
+  // The home page keyboard (keyboard.js) presses a key for every character of the prompt.
+  // It loads after this file, so the prompt waits for it (or gives up after 2.5 s).
+  var kb = document.querySelector("[data-kb]") ? "waiting" : "none";
+  var kbQueued = null;
+  function kbSettled(state) {
+    if (kb !== "waiting") return;
+    kb = state;
+    if (kbQueued) { var go = kbQueued; kbQueued = null; go(); }
+  }
+  if (kb === "waiting") {
+    document.addEventListener("kb:ready", function () { kbSettled("ready"); });
+    document.addEventListener("kb:skip", function () { kbSettled("none"); });
+    setTimeout(function () { kbSettled("none"); }, 2500);
+  }
+  function kbKey(ch) {
+    if (kb === "ready") document.dispatchEvent(new CustomEvent("garden:key", { detail: { ch: ch } }));
+  }
 
   function typeOut(el) {
     var chars = Array.from(el.getAttribute("data-text") || el.textContent);
@@ -107,9 +128,17 @@
     (function step() {
       if (i < chars.length) {
         el.textContent += chars[i];
+        if (isPrompt) kbKey(chars[i]);
         thock(chars[i] === " ", false);
         i++;
         setTimeout(step, base + Math.random() * jitter);
+      } else if (isPrompt && kb === "ready") {
+        // press enter, then the listing appears
+        setTimeout(function () {
+          kbKey("\n");
+          thock(true, false);
+          setTimeout(function () { document.body.classList.add("typed-done"); }, 180);
+        }, 420);
       } else if (isPrompt) {
         document.body.classList.add("typed-done");
       } else {
@@ -124,6 +153,7 @@
     var started = false;
     function startTyping() {
       if (started) return;
+      if (kb === "waiting") { kbQueued = startTyping; return; }
       started = true;
       targets.forEach(typeOut);
     }
