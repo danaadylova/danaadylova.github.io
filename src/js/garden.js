@@ -80,21 +80,55 @@
     thock(e.code === "Space" || e.key === "Enter", true);
   });
 
-  var btn = document.getElementById("sound-toggle");
+  // the footer's "typing sounds: off" text button, or the home page's switch (role="switch")
+  var toggles = Array.prototype.slice.call(document.querySelectorAll("#sound-toggle, [data-sound-switch]"));
   function label() {
-    if (btn) btn.textContent = "typing sounds: " + (enabled ? "on" : "off");
+    toggles.forEach(function (b) {
+      if (b.getAttribute("role") === "switch") b.setAttribute("aria-checked", String(enabled));
+      else b.textContent = "typing sounds: " + (enabled ? "on" : "off");
+    });
   }
-  if (btn) {
-    label();
-    btn.addEventListener("click", function () {
+  label();
+  toggles.forEach(function (b) {
+    b.addEventListener("click", function () {
       enabled = !enabled;
       try { localStorage.setItem(KEY, enabled ? "on" : "off"); } catch (e) {}
       label();
       if (enabled) thock(false, true);
     });
-  }
+  });
 
-  window.gardenThock = thock; // the home page keyboard plays the same sound when its keys are clicked
+  // ── retro mode: the whole site goes dark and lamp-lit (html.retro in garden.css; base.njk applies a
+  // remembered choice before the page paints). On the home page it also swaps the keyboard for the
+  // typewriter. Switches: the home page's role="switch" buttons, or the footer's "retro mode: off".
+  var RKEY = "garden-retro", root = document.documentElement;
+  var retroToggles = Array.prototype.slice.call(document.querySelectorAll("[data-retro-switch], #retro-toggle"));
+  function retroLabel() {
+    var on = root.classList.contains("retro");
+    retroToggles.forEach(function (b) {
+      if (b.getAttribute("role") === "switch") b.setAttribute("aria-checked", String(on));
+      else { b.textContent = "retro mode: " + (on ? "on" : "off"); b.setAttribute("aria-pressed", String(on)); }
+    });
+  }
+  retroLabel();
+  retroToggles.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var on = !root.classList.contains("retro");
+      root.classList.add("retro-fade");
+      root.classList.toggle("retro", on);
+      retroLabel();
+      try { localStorage.setItem(RKEY, on ? "on" : "off"); } catch (e) {}
+      setTimeout(function () { root.classList.remove("retro-fade"); }, 700);
+      document.dispatchEvent(new CustomEvent("garden:retro", { detail: { on: on } }));
+      // home page: whichever machine just appeared types the prompt again
+      var ready = on ? (window.gardenTypewriter ? window.gardenTypewriter.start() : false) : true;
+      if (ready && window.gardenRetype) setTimeout(window.gardenRetype, 450);
+    });
+  });
+
+  window.gardenThock = thock; // the 3D keyboard plays the same sound when its keys are clicked
+  // the typewriter makes its own sounds (clack, bell, ratchet) through the same switch and audio context
+  window.gardenSound = { on: function () { return enabled; }, ctx: audio };
 
   var targets = Array.prototype.slice.call(document.querySelectorAll("[data-typed]"));
   var prompt = document.getElementById("typed");
@@ -117,9 +151,11 @@
     if (kb === "ready") document.dispatchEvent(new CustomEvent("garden:key", { detail: { ch: ch } }));
   }
 
+  var promptBusy = false;
   function typeOut(el) {
     var chars = Array.from(el.getAttribute("data-text") || el.textContent);
     var isPrompt = el === prompt;
+    if (isPrompt) promptBusy = true;
     var base = isPrompt ? 85 : 45;
     var jitter = isPrompt ? 95 : 40;
     el.textContent = "";
@@ -137,15 +173,23 @@
         setTimeout(function () {
           kbKey("\n");
           thock(true, false);
-          setTimeout(function () { document.body.classList.add("typed-done"); }, 180);
+          setTimeout(function () { document.body.classList.add("typed-done"); promptBusy = false; }, 180);
         }, 420);
       } else if (isPrompt) {
         document.body.classList.add("typed-done");
+        promptBusy = false;
       } else {
         el.classList.remove("typing");
       }
     })();
   }
+
+  // retro mode (retro.js) swaps the keyboard for the typewriter, which then types the prompt again
+  window.gardenRetype = function () {
+    if (!prompt || promptBusy) return;
+    kb = "ready";
+    typeOut(prompt);
+  };
 
   if (!targets.length) {
     document.body.classList.add("typed-done");

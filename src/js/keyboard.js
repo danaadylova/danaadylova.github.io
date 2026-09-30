@@ -19,6 +19,7 @@
   }
 
   var dark = matchMedia("screen and (prefers-color-scheme: dark)");
+  function retro() { return document.documentElement.classList.contains("retro"); }
   var reduce = matchMedia("(prefers-reduced-motion: reduce)");
 
   // ── renderer / scene ───────────────────────────────────────────────
@@ -388,7 +389,7 @@
   window.addEventListener("blur", function () { all.forEach(function (k) { if (k.target) release(k.label); }); });
 
   // the home page prompt, one character at a time (sent by garden.js)
-  document.addEventListener("garden:key", function (e) { typeChar(e.detail.ch); });
+  document.addEventListener("garden:key", function (e) { if (!retro()) typeChar(e.detail.ch); });
 
   // ── start ──────────────────────────────────────────────────────────
   new ResizeObserver(resize).observe(stage);
@@ -410,5 +411,6 @@
     // for tests: advance the simulation by n frames without waiting for the browser
     step: function (n) { for (var i = 0; i < n; i++) step(1 / 60); render(); },
   };
-  document.dispatchEvent(new CustomEvent("kb:ready"));
+  // in retro mode the typewriter (typewriter.js) is the one typing, so it announces itself instead
+  if (!retro()) document.dispatchEvent(new CustomEvent("kb:ready"));
 })();

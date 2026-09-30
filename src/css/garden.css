@@ -194,7 +194,7 @@ pre code { border: none; background: none; padding: 0; }
 }
 .site-footer a { color: var(--muted); }
 .site-footer a:hover { color: var(--terra); }
-#sound-toggle {
+#sound-toggle, #retro-toggle {
   font-family: var(--mono);
   font-size: 0.8rem;
   color: var(--muted);
@@ -204,7 +204,7 @@ pre code { border: none; background: none; padding: 0; }
   cursor: pointer;
   padding: 0;
 }
-#sound-toggle:hover { color: var(--terra); border-bottom-color: var(--terra); }
+#sound-toggle:hover, #retro-toggle:hover { color: var(--terra); border-bottom-color: var(--terra); }
 
 .typed-line { font-family: var(--mono); font-size: 1.3rem; color: var(--ink); margin: 0.5rem 0 0.25rem; min-height: 1.8em; }
 .typed-line .tilde { color: var(--teal-bright); }
@@ -225,7 +225,72 @@ h1[data-typed] { min-height: 1.3em; }
 .kb canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 html:not(.js) .kb { display: none; }
 @media (max-width: 519px) { .kb { aspect-ratio: 1.8 / 1; } }
-@media print { .kb { display: none; } }
+@media print { .kb, .tw, .switches, .tw-source { display: none; } }
+
+@media screen {
+/* retro mode (garden.js; switches on the home page and in every footer): the whole site goes dark,
+   warmer and browner than evening mode, like a desk under a lamp; on the home page the typewriter
+   replaces the keyboard. Screen only, so the resume still prints light. */
+html.retro {
+  color-scheme: dark;
+  --paper: #110e0b;
+  --dot: transparent;
+  --card: #1c1813;
+  --card-border: #3a3129;
+  --ink: #f0e6d4;
+  --body: #d9cfbf;
+  --muted: #a1937e;
+  --terra: #df8f62;
+  --terra-dark: #e8a57e;
+  --teal: #6cc4a4;
+  --teal-bright: #93dcc1;
+  --olive: #b5b26e;
+  --highlight: #4a3d17;
+  --pill-bg: #2a1d16;
+  --pill-ink: #e8a57e;
+  --wip-ink: #d8b46e;
+  --wip-line: #6b5a2c;
+}
+/* the prototype's desk at night: a warm pool of lamp light behind the typewriter, near-black at the edges, no dot grid.
+   Painted on body as well as html (fixed to the viewport, so the two line up exactly): a page host that gives
+   body its own background, like the preview, would otherwise cover it and leave retro mode white. */
+html.retro, html.retro body {
+  background-color: #110e0b !important;
+  background-image: radial-gradient(ellipse 70% 52% at 50% 36%, #33271c 0%, #1d1712 45%, rgba(17, 14, 11, 0) 78%) !important;
+  background-size: auto !important;
+  background-attachment: fixed !important;
+}
+html.retro .note-figure img { filter: brightness(.92); }
+}
+.tw { display: none; width: 100%; aspect-ratio: 16 / 10.5; margin: 0.25rem 0 -0.5rem; }
+.tw canvas {
+  display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  /* the lamp throws a long shadow back and to the right: fade it out before the edges instead of cutting it off */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 92%, transparent), linear-gradient(to bottom, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 92%, transparent), linear-gradient(to bottom, #000 86%, transparent);
+  mask-composite: intersect;
+}
+html.retro .tw { display: block; }
+html.retro .tw ~ .kb { display: none; } /* if the typewriter can't run, its stage is removed and the keyboard stays */
+@media (max-width: 519px) { .tw { aspect-ratio: 1.25 / 1; } }
+html.retro-fade body, html.retro-fade body *:not(.track):not(.knob) { transition: background-color .5s ease, color .5s ease, border-color .5s ease !important; }
+html.retro-fade .tw, html.retro-fade .kb { animation: stage-in .6s ease both; }
+@keyframes stage-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { html.retro-fade .tw, html.retro-fade .kb { animation: none; } }
+
+.switches { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; margin: 0.75rem 0 -1.5rem; position: relative; z-index: 1; }
+html:not(.js) .switches { display: none; }
+.switch { display: inline-flex; align-items: center; gap: 0.55rem; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); background: none; border: none; padding: 0.2rem 0; cursor: pointer; }
+.switch:hover, .switch:focus-visible { color: var(--terra); outline: none; }
+.switch .track { position: relative; width: 2.1rem; height: 1.15rem; border-radius: 999px; border: 1px solid var(--card-border); background: var(--card); transition: background-color .3s ease, border-color .3s ease; }
+.switch .knob { position: absolute; top: 2px; left: 2px; width: calc(1.15rem - 6px); height: calc(1.15rem - 6px); border-radius: 50%; background: var(--muted); transition: transform .3s cubic-bezier(.3, 1.4, .5, 1), background-color .3s ease; }
+.switch:focus-visible .track { outline: 2px solid var(--terra); outline-offset: 2px; }
+.switch[aria-checked="true"] .track { background: var(--terra); border-color: var(--terra); }
+.switch[aria-checked="true"] .knob { transform: translateX(0.95rem); background: var(--paper); }
+.tw-source { display: none; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); text-align: right; margin: 0.25rem 0 0; }
+html.retro .tw-source:not([hidden]) { display: block; }
+.tw-source a { color: var(--terra); }
 .intro em { font-style: normal; color: inherit; }
 
 .note-meta { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-bottom: -0.5rem; }
