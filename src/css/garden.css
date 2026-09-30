@@ -244,7 +244,7 @@ html.retro {
   --terra-dark: #e8a57e;
   --teal: #6cc4a4;
   --teal-bright: #93dcc1;
-  --olive: #b5b26e;
+  --olive: #cf6f3c; /* retro: the listing links turn rust (5.5:1 on the dark, 4.9:1 in the lamp glow) */
   --highlight: #4a3d17;
   --pill-bg: #2a1d16;
   --pill-ink: #e8a57e;
