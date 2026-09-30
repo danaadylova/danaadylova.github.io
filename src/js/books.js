@@ -203,6 +203,7 @@
     rgb();
     var mq = window.matchMedia("(prefers-color-scheme: dark)");
     if (mq.addEventListener) mq.addEventListener("change", rgb);
+    document.addEventListener("garden:retro", rgb);   // retro mode switches the palette too
     function spawn() {
       var lane = Math.random() < .5 ? -5 : 5;
       parts.push({ x: W / 2 + lane + (Math.random() - .5) * 8, y: H - 2, age: 0, life: 3.6 + Math.random() * 2.2,

@@ -98,6 +98,34 @@
     });
   });
 
+  // ── retro mode: the whole site goes dark and lamp-lit (html.retro in garden.css; base.njk applies a
+  // remembered choice before the page paints). On the home page it also swaps the keyboard for the
+  // typewriter. Switches: the home page's role="switch" buttons, or the footer's "retro mode: off".
+  var RKEY = "garden-retro", root = document.documentElement;
+  var retroToggles = Array.prototype.slice.call(document.querySelectorAll("[data-retro-switch], #retro-toggle"));
+  function retroLabel() {
+    var on = root.classList.contains("retro");
+    retroToggles.forEach(function (b) {
+      if (b.getAttribute("role") === "switch") b.setAttribute("aria-checked", String(on));
+      else { b.textContent = "retro mode: " + (on ? "on" : "off"); b.setAttribute("aria-pressed", String(on)); }
+    });
+  }
+  retroLabel();
+  retroToggles.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var on = !root.classList.contains("retro");
+      root.classList.add("retro-fade");
+      root.classList.toggle("retro", on);
+      retroLabel();
+      try { localStorage.setItem(RKEY, on ? "on" : "off"); } catch (e) {}
+      setTimeout(function () { root.classList.remove("retro-fade"); }, 700);
+      document.dispatchEvent(new CustomEvent("garden:retro", { detail: { on: on } }));
+      // home page: whichever machine just appeared types the prompt again
+      var ready = on ? (window.gardenTypewriter ? window.gardenTypewriter.start() : false) : true;
+      if (ready && window.gardenRetype) setTimeout(window.gardenRetype, 450);
+    });
+  });
+
   window.gardenThock = thock; // the 3D keyboard plays the same sound when its keys are clicked
   // the typewriter makes its own sounds (clack, bell, ratchet) through the same switch and audio context
   window.gardenSound = { on: function () { return enabled; }, ctx: audio };
