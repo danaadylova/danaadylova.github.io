@@ -81,6 +81,10 @@
     green: { day: { cap: 0xf2ecdb, mod: 0xb4d0aa, accent: 0xefc55c, kase: 0x336a4a, cable: 0x336a4a, yarn: 0xefc55c } },
     olive: { day: { cap: 0xf0e8cf, mod: 0xc9c28a, accent: 0xc0693f, kase: 0x5f5e34, cable: 0x5f5e34, yarn: 0xc0693f } },
     coffee: { day: { cap: 0xf2e6d0, mod: 0xc9a47c, accent: 0x4a3326, kase: 0x6f4e37, cable: 0x6f4e37, yarn: 0xc9a47c } },
+    // olive + butter yellow, three ways
+    "olive-butter-mods": { day: { cap: 0xf3ecd6, mod: 0xefd173, accent: 0x9e9a55, kase: 0x5f5e34, cable: 0xefd173, yarn: 0x9e9a55 } },
+    "olive-butter-caps": { day: { cap: 0xf5df8e, mod: 0xf3ecd6, accent: 0x8f8c4c, kase: 0x5f5e34, cable: 0x5f5e34, yarn: 0xf3ecd6 } },
+    "butter-olive-case": { day: { cap: 0xf3ecd6, mod: 0x8a8847, accent: 0x5f5e34, kase: 0xefd173, cable: 0x8a8847, yarn: 0x5f5e34 } },
     walnut: { grain: true, day: { cap: 0xf1e6cf, mod: 0xdcbd90, accent: 0x6f7d4d, kase: 0x8a5a36, cable: 0xdcbd90, yarn: 0x6f7d4d } },
   };
   var grain = (function () { // soft walnut grain, multiplied over the case color
