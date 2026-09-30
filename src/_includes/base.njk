@@ -20,8 +20,7 @@
 {% if extraCss %}  <link rel="stylesheet" href="{{ extraCss }}?v={{ build.v }}" />
 {% endif %}
   <script>document.documentElement.className += " js";</script>
-{% if retroSwitch %}  <script>try { if (localStorage.getItem("garden-retro") === "on") document.documentElement.classList.add("retro"); } catch (e) {}</script>
-{% endif %}
+  <script>try { if (localStorage.getItem("garden-retro") === "on") document.documentElement.classList.add("retro"); } catch (e) {}</script>
 </head>
 <body>
   <header class="site-header">
@@ -43,7 +42,10 @@
       <a href="mailto:danaadylova@gmail.com">email</a> ·
       <a href="/feed.xml">rss</a>
     </span>
-{% if not retroSwitch %}    <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">typing sounds: off</button>
+{% if not retroSwitch %}    <span class="toggles">
+      <button id="retro-toggle" type="button" aria-pressed="false">retro mode: off</button> ·
+      <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">typing sounds: off</button>
+    </span>
 {% endif %}
   </footer>
   <script src="/js/garden.js?v={{ build.v }}"></script>

@@ -194,7 +194,7 @@ pre code { border: none; background: none; padding: 0; }
 }
 .site-footer a { color: var(--muted); }
 .site-footer a:hover { color: var(--terra); }
-#sound-toggle {
+#sound-toggle, #retro-toggle {
   font-family: var(--mono);
   font-size: 0.8rem;
   color: var(--muted);
@@ -204,7 +204,7 @@ pre code { border: none; background: none; padding: 0; }
   cursor: pointer;
   padding: 0;
 }
-#sound-toggle:hover { color: var(--terra); border-bottom-color: var(--terra); }
+#sound-toggle:hover, #retro-toggle:hover { color: var(--terra); border-bottom-color: var(--terra); }
 
 .typed-line { font-family: var(--mono); font-size: 1.3rem; color: var(--ink); margin: 0.5rem 0 0.25rem; min-height: 1.8em; }
 .typed-line .tilde { color: var(--teal-bright); }
@@ -227,8 +227,10 @@ html:not(.js) .kb { display: none; }
 @media (max-width: 519px) { .kb { aspect-ratio: 1.8 / 1; } }
 @media print { .kb, .tw, .switches, .tw-source { display: none; } }
 
-/* retro mode (home page switch, retro.js + typewriter.js): the typewriter instead of the keyboard,
-   and the whole page goes dark: warmer and browner than evening mode, like a desk under a lamp */
+@media screen {
+/* retro mode (garden.js; switches on the home page and in every footer): the whole site goes dark,
+   warmer and browner than evening mode, like a desk under a lamp; on the home page the typewriter
+   replaces the keyboard. Screen only, so the resume still prints light. */
 html.retro {
   color-scheme: dark;
   --paper: #110e0b;
@@ -257,6 +259,8 @@ html.retro, html.retro body {
   background-image: radial-gradient(ellipse 70% 52% at 50% 36%, #33271c 0%, #1d1712 45%, rgba(17, 14, 11, 0) 78%) !important;
   background-size: auto !important;
   background-attachment: fixed !important;
+}
+html.retro .note-figure img { filter: brightness(.92); }
 }
 .tw { display: none; width: 100%; aspect-ratio: 16 / 10.5; margin: 0.25rem 0 -0.5rem; }
 .tw canvas {

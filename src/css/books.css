@@ -80,6 +80,47 @@ html.page-books {
   --steam-a: .12;
 }
 }
+/* retro mode (garden.js) uses the same evening shelves, under its lamp-lit backdrop; screen only */
+@media screen {
+  html.page-books.retro {
+  color-scheme: dark;
+  --paper: #0e0d0c;
+  --dot: #1c1a18;
+  --wall: #161413;
+  --wall-edge: rgba(255,235,200,.05);
+  --wall-shade: rgba(0,0,0,.65);
+  --plank: #2a2623;
+  --plank-lip: #48413b;
+  --ink: #f0e9dd;
+  --body: #d7d0c4;
+  --muted: #9a9187;
+  --line: #2b2825;
+  --terra: #df8f62;
+  --terra-ink: #e8a57e;
+  --teal: #6cc4a4;
+  --brass: #d8b46e;
+  --sheet: #171514;
+  --sheet-2: #211e1c;
+  --field: #121110;
+  --glow: rgba(255,186,105,.17);
+  --dusk: rgba(0,0,0,.88);
+  --spot: rgba(255,196,120,.11);
+  --label-bg: #f0e9dd;
+  --label-ink: #1a1816;
+  --label-dim: #6f675c;
+  --sheet-shadow: 0 1px 0 rgba(255,235,200,.05), 0 30px 70px -30px rgba(0,0,0,.9);
+  --grain-o: .45;
+  --clay: #cfc3aa;
+  --glaze: #a4552f;
+  --glaze-hi: #c97a4d;
+  --tea: #2e1a0d;
+  --steam-rgb: 238,230,216;
+  --steam-a: .12;
+}
+  html.retro .room::before { opacity: .55; }
+  html.retro .room.lit::before { opacity: 1; }
+  html.retro .pin { color: #2b211a; }
+}
 /* Page-level atmosphere (only on /books) */
 html.page-books { transition: background-color 500ms ease; }
 html.page-books body::after { /* paper grain, very faint */
