@@ -370,8 +370,13 @@
     var r = renderer.domElement.getBoundingClientRect();
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
-    var hit = ray.intersectObjects(caps, true)[0];
-    for (var o = hit && hit.object; o; o = o.parent) if (o.userData.key) return o.userData.key;
+    // only solid surfaces count: the hairline outlines are lines, and three.js treats a ray that
+    // passes near a line as a hit, so the key in front used to win
+    var hits = ray.intersectObjects(caps, true);
+    for (var i = 0; i < hits.length; i++) {
+      if (!hits[i].object.isMesh) continue;
+      for (var o = hits[i].object; o; o = o.parent) if (o.userData.key) return o.userData.key;
+    }
     return null;
   }
   function thock(label) {
@@ -435,6 +440,12 @@
     colorways: Object.keys(COLORWAYS),
     setColors: function (name) { if (COLORWAYS[name]) { colorway = name; stage.dataset.colors = name; theme(); render(); } },
     typeChar: typeChar,
+    screenPos: function (label) {
+      var k = keys[label], v = new THREE.Vector3(0, CAP_H * 0.8, 0);
+      k.cap.localToWorld(v).project(camera);
+      var r = renderer.domElement.getBoundingClientRect();
+      return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+    },
     pressed: function () { return all.filter(function (k) { return k.press > 0.5; }).map(function (k) { return k.label; }); },
     reducedMotion: reduce.matches,
     // for tests: advance the simulation by n frames without waiting for the browser
