@@ -38,7 +38,7 @@ html.page-books {
   --grain-o: .30;
   --mono: 'Space Mono', ui-monospace, Menlo, monospace;
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --display: 'IM Fell English', 'Iowan Old Style', Georgia, serif;
   --hand: 'Caveat', 'Segoe Print', cursive;
   --foil: linear-gradient(135deg, #7d5f28 0%, #ecd493 42%, #b3874a 58%, #6f521f 100%);
   --slow: 1;
@@ -119,9 +119,9 @@ html:not(.js) .tools, html:not(.js) .jump { display: none; }
 /* ── year + room ── */
 .year { margin-top: 44px; }
 .year-head { display: flex; align-items: baseline; gap: 16px; margin: 0 0 20px; }
-.yr { margin: 0; font-family: var(--display); font-weight: 400; font-size: 64px; line-height: .9; letter-spacing: -.02em; color: var(--ink); }
-.yr.words { font-size: 46px; }
-.yr.words em { font-style: italic; color: var(--terra); }
+.yr { margin: 0; font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1; letter-spacing: 0; color: var(--ink); }
+.yr.words { font-size: 32px; }
+.yr.words em { font-style: normal; color: inherit; }
 .ym { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .cardlink { font-family: var(--mono); font-size: 12px; color: var(--terra-ink, var(--terra)); text-decoration: none; border-bottom: 1px dashed currentColor; white-space: nowrap; }
 .cardlink:hover { border-bottom-style: solid; }
@@ -526,8 +526,8 @@ html:not(.js) .tools, html:not(.js) .jump { display: none; }
 }
 @media (max-width: 480px) {
   .folders { gap: 12px; font-size: 13px; }
-  .yr { font-size: 52px; }
-  .yr.words { font-size: 38px; }
+  .yr { font-size: 29px; }
+  .yr.words { font-size: 27px; }
   .room { padding: 26px 10px 0; gap: 22px; }
   .plank { margin-inline: -10px; }
   .row { height: 180px; }

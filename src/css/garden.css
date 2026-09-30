@@ -19,7 +19,7 @@
   --wip-line: #d9c27a;
   --mono: 'Space Mono', ui-monospace, monospace;
   --sans: 'Inter', system-ui, sans-serif;
-  --serif: 'Instrument Serif', Georgia, serif;
+  --serif: 'IM Fell English', 'Iowan Old Style', Georgia, serif;
 }
 
 /* Evening mode: the same charcoal as /books (books.css sets its own, more detailed palette on html.page-books).
@@ -217,7 +217,7 @@ h1[data-typed] { min-height: 1.3em; }
 .js body.typed-done .ls-output, html.js body.typed-done .ls-output { opacity: 1; }
 
 .intro { font-size: 1.05rem; }
-.intro em { font-style: italic; color: var(--terra); }
+.intro em { font-style: normal; color: inherit; }
 
 .note-meta { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-bottom: -0.5rem; }
 .note h1 { margin-top: 0.5rem; }
