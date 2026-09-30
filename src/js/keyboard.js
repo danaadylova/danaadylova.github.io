@@ -2,7 +2,7 @@
 // It types the `~/dana $ ls -l` prompt together with garden.js: garden.js waits for "kb:ready",
 // then sends one "garden:key" event per character. Visitors can press keys by clicking them,
 // or by typing on their own keyboard while it's on screen.
-// Markup: <div class="kb" data-kb data-colors="<a colorway below>" aria-hidden="true"></div>
+// Markup: <div class="kb" data-kb aria-hidden="true"></div>
 (function () {
   var stage = document.querySelector("[data-kb]");
   if (!stage) return;
@@ -48,7 +48,7 @@
   function std(r) { return new THREE.MeshStandardMaterial({ roughness: r }); }
   var M = {
     cap: std(0.7), mod: std(0.7), accent: std(0.7), kase: std(0.6), plate: std(0.75), sw: std(0.65),
-    stem: std(0.5), cable: std(0.6), yarn: std(0.9),
+    stem: std(0.5), cable: std(0.6), yarn: std(0.9), yarnRing: std(0.9),
     edge: new THREE.LineBasicMaterial({ transparent: true, opacity: 0.45 }),
     caseEdge: new THREE.LineBasicMaterial({ transparent: true, opacity: 0.45 }),
   };
@@ -64,66 +64,29 @@
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Colorways (sRGB hex). Each one names its day colors; evening is derived from them
-  // (the same colors, muted and darker) unless it spells out its own.
-  //   cap: letter keys · mod: edge keys · accent: enter and the yarn-ball escape · kase: the case
-  var COLORWAYS = {
-    cream: {
-      day: { cap: 0xf6efe3, mod: 0xd9cbb6, accent: 0xd9cbb6, kase: 0xe9dcc6, cable: 0xf1e8da, yarn: 0xcfb99a },
-      eve: { cap: 0x8d8579, mod: 0x6f665a, accent: 0x6f665a, kase: 0x6a6153, cable: 0x7d7468, yarn: 0xa08a6c },
-    },
-    moss: { day: { cap: 0xefe6cc, mod: 0xa6b077, accent: 0xecc762, kase: 0x68774a, cable: 0x68774a, yarn: 0xecc762 } },
-    "butter-sage": { day: { cap: 0xf6eed3, mod: 0xa9ba84, accent: 0x7f9763, kase: 0xefd272, cable: 0xa9ba84, yarn: 0x7f9763 } },
-    matcha: { day: { cap: 0xefe9d6, mod: 0x97aa74, accent: 0xc0693f, kase: 0xb9c78e, cable: 0x97aa74, yarn: 0xc0693f } },
-    "forest-honey": { day: { cap: 0xefe6cf, mod: 0xdcae52, accent: 0xdcae52, kase: 0x33503b, cable: 0x33503b, yarn: 0xdcae52 } },
-    pistachio: { day: { cap: 0xf4dd88, mod: 0xa3bb78, accent: 0xec9270, kase: 0xcfdca6, cable: 0xa3bb78, yarn: 0xec9270 } },
-    terracotta: { day: { cap: 0xf1e7d0, mod: 0xe2c6a0, accent: 0x6f7d4d, kase: 0x96553a, cable: 0x96553a, yarn: 0x6f7d4d } },
-    green: { day: { cap: 0xf2ecdb, mod: 0xb4d0aa, accent: 0xefc55c, kase: 0x336a4a, cable: 0x336a4a, yarn: 0xefc55c } },
-    olive: { day: { cap: 0xf0e8cf, mod: 0xc9c28a, accent: 0xc0693f, kase: 0x5f5e34, cable: 0x5f5e34, yarn: 0xc0693f } },
-    coffee: { day: { cap: 0xf2e6d0, mod: 0xc9a47c, accent: 0x4a3326, kase: 0x6f4e37, cable: 0x6f4e37, yarn: 0xc9a47c } },
-    // olive + butter yellow, three ways
-    "olive-butter-mods": { day: { cap: 0xf3ecd6, mod: 0xefd173, accent: 0x9e9a55, kase: 0x5f5e34, cable: 0xefd173, yarn: 0x9e9a55 } },
-    "olive-butter-caps": { day: { cap: 0xf5df8e, mod: 0xf3ecd6, accent: 0x8f8c4c, kase: 0x5f5e34, cable: 0x5f5e34, yarn: 0xf3ecd6 } },
-    "butter-olive-case": { day: { cap: 0xf3ecd6, mod: 0x8a8847, accent: 0x5f5e34, kase: 0xefd173, cable: 0x8a8847, yarn: 0x5f5e34 } },
-    walnut: { grain: true, day: { cap: 0xf1e6cf, mod: 0xdcbd90, accent: 0x6f7d4d, kase: 0x8a5a36, cable: 0xdcbd90, yarn: 0x6f7d4d } },
-  };
-  var grain = (function () { // soft walnut grain, multiplied over the case color
-    var c = document.createElement("canvas"), g = c.getContext("2d");
-    c.width = 1024; c.height = 256;
-    g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
-    for (var i = 0; i < 70; i++) {
-      var y0 = Math.random() * c.height, amp = 2 + Math.random() * 7, f = 0.004 + Math.random() * 0.01, ph = Math.random() * 6;
-      g.strokeStyle = "rgba(60,30,10," + (0.06 + Math.random() * 0.16) + ")";
-      g.lineWidth = 0.6 + Math.random() * 2.2;
-      g.beginPath();
-      for (var x = 0; x <= c.width; x += 8) {
-        var y = y0 + Math.sin(x * f + ph) * amp + Math.sin(x * f * 3.1 + ph) * amp * 0.3;
-        x ? g.lineTo(x, y) : g.moveTo(x, y);
-      }
-      g.stroke();
-    }
-    var t = new THREE.CanvasTexture(c);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(0.07, 0.35); // extrude UVs are in board units
-    t.encoding = THREE.sRGBEncoding;
-    return t;
-  })();
-  var colorway = COLORWAYS[stage.dataset.colors] ? stage.dataset.colors : "cream";
+  // Olive + butter yellow (sRGB hex): cream letter keys, butter edge keys and cable, an olive case.
+  // Evening is the same colors, muted and darker; the warm glow underneath adds color back.
+  //   cap: letter keys · mod: edge keys · accent: enter and escape · kase: the case
+  var DAY = { cap: 0xf3ecd6, mod: 0xefd173, accent: 0x9e9a55, kase: 0x5f5e34, cable: 0xefd173 };
   var tmp = new THREE.Color(), hsl = {};
   function shade(hex, l, s) { // scale lightness (and saturation) of an sRGB hex
     tmp.setHex(hex).getHSL(hsl);
     return tmp.setHSL(hsl.h, Math.min(1, hsl.s * (s || 1)), Math.min(1, hsl.l * l)).getHex();
   }
-  function palette(name, eve) {
-    var cw = COLORWAYS[name], day = cw.day, p = {};
-    var base = eve ? (cw.eve || {}) : day;
-    ["cap", "mod", "accent", "kase", "cable", "yarn"].forEach(function (k) {
-      p[k] = base[k] !== undefined ? base[k] : shade(day[k], 0.55, 0.45); // the warm glow adds color back
-    });
-    p.plate = shade(day.kase, eve ? 0.2 : 0.62, 0.8);   // under the keys: the case color in shadow
-    p.sw = shade(day.kase, eve ? 0.28 : 0.45, 0.6);
-    p.stem = shade(day.mod, eve ? 0.6 : 0.95);
-    p.caseEdge = eve ? 0x0e0906 : shade(day.kase, 0.72);
+  // the yarn ball is the site's terracotta (--terra, the blinking cursor), in both modes
+  function terra() {
+    var v = getComputedStyle(document.documentElement).getPropertyValue("--terra").trim();
+    return /^#[0-9a-f]{6}$/i.test(v) ? parseInt(v.slice(1), 16) : 0xa9603a;
+  }
+  function palette(eve) {
+    var p = {};
+    for (var k in DAY) p[k] = eve ? shade(DAY[k], 0.55, 0.45) : DAY[k];
+    p.plate = shade(DAY.kase, eve ? 0.2 : 0.62, 0.8); // under the keys: the case color in shadow
+    p.sw = shade(DAY.kase, eve ? 0.28 : 0.45, 0.6);
+    p.stem = shade(DAY.mod, eve ? 0.6 : 0.95);
+    p.caseEdge = eve ? 0x0e0906 : shade(DAY.kase, 0.72);
+    p.yarn = terra();
+    p.yarnRing = shade(p.yarn, 1.18, 0.9);
     return p;
   }
 
@@ -257,7 +220,7 @@
     var ball = new THREE.Group();
     ball.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), M.yarn));
     for (var i = 0; i < 6; i++) {
-      var ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.022, 6, 28), M.cap);
+      var ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.022, 6, 28), M.yarnRing);
       ring.rotation.set(i * 0.9, i * 0.55, i * 0.3);
       ball.add(ring);
     }
@@ -272,9 +235,7 @@
   }
   function theme() {
     var d = dark.matches;
-    setColors(palette(colorway, d));
-    var map = COLORWAYS[colorway].grain ? grain : null;
-    if (M.kase.map !== map) { M.kase.map = map; M.kase.needsUpdate = true; }
+    setColors(palette(d));
     all.forEach(function (k) { k.mat.color.copy(M[k.kind].color); k.mat.emissiveIntensity = 0; });
     glowOn = d;
     underLights.forEach(function (l) { l.intensity = d ? 3.2 : 0; });
@@ -437,8 +398,6 @@
   resize();
   stage.classList.add("kb-on");
   window.gardenKeyboard = {
-    colorways: Object.keys(COLORWAYS),
-    setColors: function (name) { if (COLORWAYS[name]) { colorway = name; stage.dataset.colors = name; theme(); render(); } },
     typeChar: typeChar,
     screenPos: function (label) {
       var k = keys[label], v = new THREE.Vector3(0, CAP_H * 0.8, 0);
