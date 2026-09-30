@@ -1,6 +1,6 @@
-// The little 3D keyboard on the home page (three.js r128, loaded just before this file).
-// It types the `~/dana $ ls -l` prompt together with garden.js: garden.js waits for "kb:ready",
-// then sends one "garden:key" event per character. Visitors can press keys by clicking them,
+// The little 3D keyboard on the home and blog pages (three.js r128, loaded just before this file).
+// It types along with garden.js (the home prompt, the blog title): garden.js waits for "kb:ready",
+// then sends one "garden:key" event per character of the element marked data-kb-type. Visitors can press keys by clicking them,
 // or by typing on their own keyboard while it's on screen.
 // Markup: <div class="kb" data-kb aria-hidden="true"></div>
 (function () {
@@ -387,7 +387,7 @@
   });
   window.addEventListener("blur", function () { all.forEach(function (k) { if (k.target) release(k.label); }); });
 
-  // the home page prompt, one character at a time (sent by garden.js)
+  // the typed line (home prompt, blog title), one character at a time, sent by garden.js
   document.addEventListener("garden:key", function (e) { typeChar(e.detail.ch); });
 
   // ── start ──────────────────────────────────────────────────────────

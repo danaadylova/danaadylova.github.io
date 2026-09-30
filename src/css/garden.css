@@ -220,10 +220,11 @@ h1[data-typed] { min-height: 1.3em; }
 
 .intro { font-size: 1.05rem; }
 
-/* the little 3D keyboard on the home page (keyboard.js); it types the prompt below it */
+/* the little 3D keyboard on the home and blog pages (keyboard.js); it types the line below it */
 .kb { width: 100%; aspect-ratio: 2.2 / 1; margin: 0.75rem 0 -0.25rem; }
 .kb canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 html:not(.js) .kb { display: none; }
+.kb-blog { margin-bottom: -1.25rem; } /* the h1 sits right under it */
 @media (max-width: 519px) { .kb { aspect-ratio: 1.8 / 1; } }
 @media print { .kb { display: none; } }
 .intro em { font-style: normal; color: inherit; }

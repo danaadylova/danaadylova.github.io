@@ -4,7 +4,8 @@ title: blog
 permalink: /blog/
 eleventyExcludeFromCollections: true
 ---
-<h1 data-typed>blog</h1>
+<div class="kb kb-blog" data-kb aria-hidden="true"></div>
+<h1 data-typed data-kb-type>blog</h1>
 <p class="lede">Notes, experiments, and things I figured out along the way.</p>
 {%- set lastYear = 0 %}
 {% for post in collections.post | reverse %}
@@ -22,3 +23,6 @@ eleventyExcludeFromCollections: true
   </li>
 {%- endfor %}
 </ol>
+
+<script src="/js/vendor/three.r128.min.js" defer></script>
+<script src="/js/keyboard.js?v={{ build.v }}" defer></script>

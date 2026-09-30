@@ -94,14 +94,21 @@
     });
   }
 
-  window.gardenThock = thock; // the home page keyboard plays the same sound when its keys are clicked
+  window.gardenThock = thock; // the 3D keyboard plays the same sound when its keys are clicked
 
   var targets = Array.prototype.slice.call(document.querySelectorAll("[data-typed]"));
   var prompt = document.getElementById("typed");
 
-  // The home page keyboard (keyboard.js) presses a key for every character of the prompt.
-  // It loads after this file, so the prompt waits for it (or gives up after 2.5 s).
+  // The 3D keyboard (keyboard.js, on the home and blog pages) presses a key for every character
+  // of the text marked data-kb-type. It loads after this file, so typing waits for it (or gives up
+  // after 2.5 s); meanwhile that text is blanked so it doesn't show, vanish and type again.
   var kb = document.querySelector("[data-kb]") ? "waiting" : "none";
+  if (kb === "waiting") targets.forEach(function (el) {
+    if (!el.hasAttribute("data-kb-type")) return;
+    if (!el.hasAttribute("data-text")) el.setAttribute("data-text", el.textContent);
+    el.textContent = "";
+    el.classList.add("typing");
+  });
   var kbQueued = null;
   function kbSettled(state) {
     if (kb !== "waiting") return;
@@ -120,15 +127,16 @@
   function typeOut(el) {
     var chars = Array.from(el.getAttribute("data-text") || el.textContent);
     var isPrompt = el === prompt;
-    var base = isPrompt ? 85 : 45;
-    var jitter = isPrompt ? 95 : 40;
+    var withKb = el.hasAttribute("data-kb-type");
+    var base = isPrompt || withKb ? 85 : 45;
+    var jitter = isPrompt || withKb ? 95 : 40;
     el.textContent = "";
     el.classList.add("typing");
     var i = 0;
     (function step() {
       if (i < chars.length) {
         el.textContent += chars[i];
-        if (isPrompt) kbKey(chars[i]);
+        if (withKb) kbKey(chars[i]);
         thock(chars[i] === " ", false);
         i++;
         setTimeout(step, base + Math.random() * jitter);
