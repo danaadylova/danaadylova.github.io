@@ -77,7 +77,33 @@
     matcha: { day: { cap: 0xefe9d6, mod: 0x97aa74, accent: 0xc0693f, kase: 0xb9c78e, cable: 0x97aa74, yarn: 0xc0693f } },
     "forest-honey": { day: { cap: 0xefe6cf, mod: 0xdcae52, accent: 0xdcae52, kase: 0x33503b, cable: 0x33503b, yarn: 0xdcae52 } },
     pistachio: { day: { cap: 0xf4dd88, mod: 0xa3bb78, accent: 0xec9270, kase: 0xcfdca6, cable: 0xa3bb78, yarn: 0xec9270 } },
+    terracotta: { day: { cap: 0xf1e7d0, mod: 0xe2c6a0, accent: 0x6f7d4d, kase: 0x96553a, cable: 0x96553a, yarn: 0x6f7d4d } },
+    green: { day: { cap: 0xf2ecdb, mod: 0xb4d0aa, accent: 0xefc55c, kase: 0x336a4a, cable: 0x336a4a, yarn: 0xefc55c } },
+    olive: { day: { cap: 0xf0e8cf, mod: 0xc9c28a, accent: 0xc0693f, kase: 0x5f5e34, cable: 0x5f5e34, yarn: 0xc0693f } },
+    coffee: { day: { cap: 0xf2e6d0, mod: 0xc9a47c, accent: 0x4a3326, kase: 0x6f4e37, cable: 0x6f4e37, yarn: 0xc9a47c } },
+    walnut: { grain: true, day: { cap: 0xf1e6cf, mod: 0xdcbd90, accent: 0x6f7d4d, kase: 0x8a5a36, cable: 0xdcbd90, yarn: 0x6f7d4d } },
   };
+  var grain = (function () { // soft walnut grain, multiplied over the case color
+    var c = document.createElement("canvas"), g = c.getContext("2d");
+    c.width = 1024; c.height = 256;
+    g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+    for (var i = 0; i < 70; i++) {
+      var y0 = Math.random() * c.height, amp = 2 + Math.random() * 7, f = 0.004 + Math.random() * 0.01, ph = Math.random() * 6;
+      g.strokeStyle = "rgba(60,30,10," + (0.06 + Math.random() * 0.16) + ")";
+      g.lineWidth = 0.6 + Math.random() * 2.2;
+      g.beginPath();
+      for (var x = 0; x <= c.width; x += 8) {
+        var y = y0 + Math.sin(x * f + ph) * amp + Math.sin(x * f * 3.1 + ph) * amp * 0.3;
+        x ? g.lineTo(x, y) : g.moveTo(x, y);
+      }
+      g.stroke();
+    }
+    var t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(0.07, 0.35); // extrude UVs are in board units
+    t.encoding = THREE.sRGBEncoding;
+    return t;
+  })();
   var colorway = COLORWAYS[stage.dataset.colors] ? stage.dataset.colors : "cream";
   var tmp = new THREE.Color(), hsl = {};
   function shade(hex, l, s) { // scale lightness (and saturation) of an sRGB hex
@@ -243,6 +269,8 @@
   function theme() {
     var d = dark.matches;
     setColors(palette(colorway, d));
+    var map = COLORWAYS[colorway].grain ? grain : null;
+    if (M.kase.map !== map) { M.kase.map = map; M.kase.needsUpdate = true; }
     all.forEach(function (k) { k.mat.color.copy(M[k.kind].color); k.mat.emissiveIntensity = 0; });
     glowOn = d;
     underLights.forEach(function (l) { l.intensity = d ? 3.2 : 0; });
