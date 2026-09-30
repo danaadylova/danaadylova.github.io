@@ -43,7 +43,8 @@
       <a href="mailto:danaadylova@gmail.com">email</a> ·
       <a href="/feed.xml">rss</a>
     </span>
-    <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">typing sounds: off</button>
+{% if not retroSwitch %}    <button id="sound-toggle" type="button" aria-label="Toggle typing sounds">typing sounds: off</button>
+{% endif %}
   </footer>
   <script src="/js/garden.js?v={{ build.v }}"></script>
 {% if extraJs %}  <script src="{{ extraJs }}?v={{ build.v }}" defer></script>

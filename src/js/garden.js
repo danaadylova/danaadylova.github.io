@@ -80,21 +80,27 @@
     thock(e.code === "Space" || e.key === "Enter", true);
   });
 
-  var btn = document.getElementById("sound-toggle");
+  // the footer's "typing sounds: off" text button, or the home page's switch (role="switch")
+  var toggles = Array.prototype.slice.call(document.querySelectorAll("#sound-toggle, [data-sound-switch]"));
   function label() {
-    if (btn) btn.textContent = "typing sounds: " + (enabled ? "on" : "off");
+    toggles.forEach(function (b) {
+      if (b.getAttribute("role") === "switch") b.setAttribute("aria-checked", String(enabled));
+      else b.textContent = "typing sounds: " + (enabled ? "on" : "off");
+    });
   }
-  if (btn) {
-    label();
-    btn.addEventListener("click", function () {
+  label();
+  toggles.forEach(function (b) {
+    b.addEventListener("click", function () {
       enabled = !enabled;
       try { localStorage.setItem(KEY, enabled ? "on" : "off"); } catch (e) {}
       label();
       if (enabled) thock(false, true);
     });
-  }
+  });
 
-  window.gardenThock = thock; // the home page keyboard plays the same sound when its keys are clicked
+  window.gardenThock = thock; // the 3D keyboard plays the same sound when its keys are clicked
+  // the typewriter makes its own sounds (clack, bell, ratchet) through the same switch and audio context
+  window.gardenSound = { on: function () { return enabled; }, ctx: audio };
 
   var targets = Array.prototype.slice.call(document.querySelectorAll("[data-typed]"));
   var prompt = document.getElementById("typed");
