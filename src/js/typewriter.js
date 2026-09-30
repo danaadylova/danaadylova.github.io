@@ -1,7 +1,9 @@
 // The 3D typewriter for retro mode on the home page (three.js r128, loaded before this file).
 // It is only built when retro mode is on (retro.js calls gardenTypewriter.start()). Like the
-// keyboard, it types the prompt with garden.js ("garden:key" events), and visitors can click its
-// keys, pull the return lever, or type on their own keyboard: the letters land on its paper.
+// keyboard, it types the prompt with garden.js ("garden:key" events); then it types the opening
+// of a random blog post (#tw-entries, built in index.njk) and links to it under the machine.
+// Visitors can click its keys, pull the return lever, or type on their own keyboard: the letters
+// land on its paper. With "typing sounds" on it clacks, rings its margin bell and ratchets.
 // Markup: <div class="tw" data-tw aria-hidden="true"></div>
 (function () {
   var stage = document.querySelector("[data-tw]");
@@ -312,7 +314,7 @@
       var table = add(carriage, new THREE.BoxGeometry(PLAT_L - 0.6, 1.7, 0.05), M.lacquer);
       table.position.set(0, t.y - 0.07 * Math.sin(A1), t.z - 0.07 * Math.cos(A1));
       table.rotation.x = -A1;
-      var b = pathAt(ARC + 1.95), bz = b.z + 0.07 * Math.cos(A1), by = b.y + 0.07 * Math.sin(A1); // paper bail and its rollers
+      var b = pathAt(ARC + 2.38), bz = b.z + 0.07 * Math.cos(A1), by = b.y + 0.07 * Math.sin(A1); // paper bail and its rollers
       var rod = add(carriage, new THREE.CylinderGeometry(0.028, 0.028, PAPER_W + 0.9, 12), M.chrome); rod.rotation.z = Math.PI / 2; rod.position.set(0, by, bz);
       [-1.25, 1.25].forEach(function (sx) { var rl = add(carriage, new THREE.CylinderGeometry(0.075, 0.075, 0.34, 16), M.rubber); rl.rotation.z = Math.PI / 2; rl.position.set(sx, by, bz); });
     })();
@@ -369,7 +371,44 @@
     }
     var clock = 0, carX = 0, carV = 0, carTarget = 0, returning = null, queue = [], nextActionAt = 0;
     var TRAVEL = 0.17;
-    function thock(deep) { if (window.gardenThock) window.gardenThock(deep, true); }
+    // ── sound: only when "typing sounds" is on (garden.js owns the switch and the audio context)
+    function audio() {
+      var gs = window.gardenSound;
+      if (!gs || !gs.on()) return null;
+      var ac = gs.ctx();
+      if (ac.state === "suspended") ac.resume();
+      return ac.state === "running" ? ac : null;
+    }
+    function burst(ac, t, dur, freq, q, gain) {
+      var buf = ac.createBuffer(1, Math.max(1, Math.floor(ac.sampleRate * dur)), ac.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.5);
+      var src = ac.createBufferSource(), f = ac.createBiquadFilter(), gn = ac.createGain();
+      src.buffer = buf; f.type = "bandpass"; f.frequency.value = freq; f.Q.value = q; gn.gain.value = gain;
+      src.connect(f); f.connect(gn); gn.connect(ac.destination); src.start(t);
+    }
+    function thump(ac, t, hz, dur, gain) {
+      var o = ac.createOscillator(), gn = ac.createGain();
+      o.frequency.setValueAtTime(hz, t); o.frequency.exponentialRampToValueAtTime(hz * 0.5, t + dur);
+      gn.gain.setValueAtTime(gain, t); gn.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(gn); gn.connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+    }
+    var snd = {
+      strike: function () { var ac = audio(); if (!ac) return; var t = ac.currentTime; burst(ac, t, 0.035, 2600, 0.8, 0.6); thump(ac, t, 130, 0.06, 0.35); },
+      space: function () { var ac = audio(); if (!ac) return; burst(ac, ac.currentTime, 0.03, 900, 0.9, 0.3); },
+      bell: function () {
+        var ac = audio(); if (!ac) return; var t = ac.currentTime;
+        [[2093, 0.1], [5230, 0.03], [3140, 0.04]].forEach(function (p) {
+          var o = ac.createOscillator(), gn = ac.createGain(); o.frequency.value = p[0];
+          gn.gain.setValueAtTime(p[1], t); gn.gain.exponentialRampToValueAtTime(0.0005, t + 1.6);
+          o.connect(gn); gn.connect(ac.destination); o.start(t); o.stop(t + 1.7);
+        });
+      },
+      ret: function () {
+        var ac = audio(); if (!ac) return; var t = ac.currentTime;
+        for (var i = 0; i < 8; i++) burst(ac, t + i * 0.04, 0.012, 3200, 2, 0.16);
+        burst(ac, t + 0.46, 0.06, 500, 0.7, 0.5); thump(ac, t + 0.46, 80, 0.1, 0.4);
+      },
+    };
     function press(k, hold) {
       k.target = 1;
       k.releaseAt = hold === Infinity ? Infinity : clock + (hold || 0.07);
@@ -378,7 +417,7 @@
     function typeChar(ch) {
       var info = keyFor(ch);
       if (!info) return;
-      if (ch === " ") { press(info.key, 0.09); setColumn(column + 1); thock(true); return; }
+      if (ch === " ") { press(info.key, 0.09); setColumn(column + 1); snd.space(); return; }
       if (info.shift) press(keys.lshift, 0.2);
       press(info.key);
       var bar = info.key.bar;
@@ -388,25 +427,86 @@
       var r = Math.random;
       lines[0].push({ k: column, ch: glyph, a: 0.82 + r() * 0.18, jx: (r() - 0.5) * 1.6, jy: (r() - 0.5) * 1.6 });
       drawPaper();
-      thock(false);
+      snd.strike();
       setColumn(column + 1);
+      if (column === MAXCOL - 6) snd.bell();   // the margin bell: a few letters left on this line
     }
     function process() {
       if (returning || !queue.length || clock < nextActionAt) return;
       var a = queue.shift();
       if (a.type === "char") { typeChar(a.ch); nextActionAt = clock + 0.055; }
-      else if (a.type === "return") { returning = { t: 0, from: carX, rot0: platen.rotation.x }; thock(true); }
+      else if (a.type === "return") { returning = { t: 0, from: carX, rot0: platen.rotation.x }; snd.ret(); }
       else if (a.type === "back") { setColumn(column - 1); nextActionAt = clock + 0.08; }
     }
-    function act(a) { queue.push(a); wake(); }
+    function act(a, fromVisitor) {
+      if (fromVisitor) auto = [];            // someone else is typing now: stop the blog note
+      queue.push(a); wake();
+    }
+
+    // ── a random blog note, typed after the prompt ───────────────────
+    var entries = [], auto = [], autoNext = 0, lastEntry = -1, WRAP = MAXCOL - 1;
+    try { entries = JSON.parse(document.getElementById("tw-entries").textContent); } catch (e) {}
+    var source = document.querySelector("[data-tw-source]");
+    function clean(s) { // only what the machine has keys for
+      s = String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"')
+        .replace(/[\u2013\u2014]/g, "-").replace(/\u2026/g, "...").replace(/\s+/g, " ").trim();
+      return s.split("").filter(function (ch) { return ch === " " || keyFor(ch); }).join("");
+    }
+    function opening(text) { // the first sentence or two, up to ~150 letters
+      var parts = text.match(/[^.!?]+[.!?]+(\s|$)/g) || [], out = "";
+      for (var i = 0; i < parts.length && (out + parts[i]).length <= 150; i++) out += parts[i];
+      out = out.trim();
+      if (!out) { out = text.slice(0, 140); out = out.slice(0, out.lastIndexOf(" ")) + "..."; }
+      return out;
+    }
+    function wrap(text) {
+      var lines = [""];
+      text.split(" ").forEach(function (w) {
+        while (w.length > WRAP) { lines.push(w.slice(0, WRAP)); w = w.slice(WRAP); }
+        var cur = lines[lines.length - 1];
+        if (!cur.length) lines[lines.length - 1] = w;
+        else if (cur.length + 1 + w.length <= WRAP) lines[lines.length - 1] = cur + " " + w;
+        else lines.push(w);
+      });
+      return lines;
+    }
+    function planEntry() {
+      if (!entries.length) return;
+      var i = Math.floor(Math.random() * entries.length);
+      if (entries.length > 1 && i === lastEntry) i = (i + 1) % entries.length;
+      lastEntry = i;
+      var e = entries[i];
+      auto = [];
+      function type(line) {
+        line.split("").forEach(function (ch) {
+          auto.push({ ch: ch, d: 0.075 + Math.random() * 0.12 + (ch === " " ? 0.05 : 0) + (/[.,;!?]/.test(ch) ? 0.28 : 0) + (Math.random() < 0.05 ? 0.4 : 0) });
+        });
+        auto.push({ ch: "\n", d: 0.75 });
+      }
+      auto.push({ ch: "\n", d: 0.8 });       // a blank line after the prompt
+      wrap(clean(e.title)).forEach(type);
+      auto.push({ ch: "\n", d: 0.8 });       // and one after the title
+      wrap(clean(opening(e.text))).forEach(type);
+      autoNext = clock + 1.1;
+      if (source) {
+        var a = source.querySelector("a");
+        a.href = e.url; a.textContent = e.title;
+        source.hidden = false;
+      }
+    }
 
     // ── simulation ───────────────────────────────────────────────────
     var UP = 0.055, DOWN = 0.17;
     function ease(u) { return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
     function step(dt) {
       clock += dt;
+      if (auto.length && clock >= autoNext && !queue.length && !returning) {
+        var it = auto.shift();
+        queue.push(it.ch === "\n" ? { type: "return" } : { type: "char", ch: it.ch });
+        autoNext = clock + it.d;
+      }
       process();
-      var busy = queue.length > 0 || !!returning;
+      var busy = queue.length > 0 || !!returning || auto.length > 0;
       allKeys.forEach(function (k) {
         if (k.target && clock >= k.releaseAt) k.target = 0;
         var stiff = k.target ? 900 : 380, damp = k.target ? 50 : 22;
@@ -505,14 +605,14 @@
     canvas.addEventListener("pointerdown", function (ev) {
       var hit = hitAt(ev);
       if (!hit) return;
-      if (hit.lever) { act({ type: "return" }); return; }
+      if (hit.lever) { act({ type: "return" }, true); return; }
       var k = hit.key, l = k.label;
       if (l === "lock") { capsLock = !capsLock; press(k, capsLock ? Infinity : 0.1); wake(); return; }
       if (l === "lshift" || l === "rshift") { press(k, Infinity); holding = k; wake(); return; }
-      if (l === "back") { press(k, 0.1); act({ type: "back" }); return; }
+      if (l === "back") { press(k, 0.1); act({ type: "back" }, true); return; }
       var shift = capsLock || held(keys.lshift) || held(keys.rshift), ch = l;
       if (shift && l.length === 1) ch = /[a-z]/.test(l) ? l.toUpperCase() : (Object.keys(SHIFTED).filter(function (c) { return SHIFTED[c] === l; })[0] || l);
-      act({ type: "char", ch: ch });
+      act({ type: "char", ch: ch }, true);
     });
     function letGo() { if (holding) { holding.target = 0; holding.releaseAt = 0; holding = null; wake(); } }
     canvas.addEventListener("pointerup", letGo);
@@ -527,18 +627,20 @@
     document.addEventListener("keydown", function (e) {
       if (!retro() || !visible || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.target.closest && e.target.closest("button, input, textarea, select, a")) return;
-      if (e.key === "Enter") { act({ type: "return" }); return; }
-      if (e.key === "Backspace") { press(keys.back, 0.1); act({ type: "back" }); return; }
+      if (e.key === "Enter") { act({ type: "return" }, true); return; }
+      if (e.key === "Backspace") { press(keys.back, 0.1); act({ type: "back" }, true); return; }
       if (e.key === "Shift") { press(e.code === "ShiftRight" ? keys.rshift : keys.lshift, 0.15); wake(); return; }
       if (e.key.length === 1 && keyFor(e.key) && !e.repeat) {
         if (e.key === " ") e.preventDefault();
-        act({ type: "char", ch: e.key });
+        act({ type: "char", ch: e.key }, true);
       }
     });
     // the prompt, one character at a time (sent by garden.js)
     document.addEventListener("garden:key", function (e) {
       if (!retro()) return;
-      act(e.detail.ch === "\n" ? { type: "return" } : { type: "char", ch: e.detail.ch });
+      if (e.detail.ch !== "\n") { act({ type: "char", ch: e.detail.ch }); return; }
+      act({ type: "return" });
+      planEntry();                           // the prompt is done: now a note from the blog
     });
 
     setColumn(0); carX = carTarget; carriage.position.x = carX;
