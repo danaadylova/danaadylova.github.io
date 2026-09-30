@@ -2,7 +2,7 @@
 // It types the `~/dana $ ls -l` prompt together with garden.js: garden.js waits for "kb:ready",
 // then sends one "garden:key" event per character. Visitors can press keys by clicking them,
 // or by typing on their own keyboard while it's on screen.
-// Markup: <div class="kb" data-kb data-case="cream|chocolate" aria-hidden="true"></div>
+// Markup: <div class="kb" data-kb data-colors="<a colorway below>" aria-hidden="true"></div>
 (function () {
   var stage = document.querySelector("[data-kb]");
   if (!stage) return;
@@ -47,7 +47,7 @@
 
   function std(r) { return new THREE.MeshStandardMaterial({ roughness: r }); }
   var M = {
-    cap: std(0.7), mod: std(0.7), kase: std(0.6), plate: std(0.75), sw: std(0.65),
+    cap: std(0.7), mod: std(0.7), accent: std(0.7), kase: std(0.6), plate: std(0.75), sw: std(0.65),
     stem: std(0.5), cable: std(0.6), yarn: std(0.9),
     edge: new THREE.LineBasicMaterial({ transparent: true, opacity: 0.45 }),
     caseEdge: new THREE.LineBasicMaterial({ transparent: true, opacity: 0.45 }),
@@ -64,20 +64,38 @@
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Palettes (sRGB hex). Evening is the day palette, muted and darker, lit warm from underneath.
-  var KEYS_DAY = { cap: 0xf6efe3, mod: 0xd9cbb6, sw: 0x857667, stem: 0xcdbfa9, yarn: 0xcfb99a };
-  var KEYS_EVE = { cap: 0x8d8579, mod: 0x6f665a, sw: 0x3a3027, stem: 0x9c8d78, yarn: 0xa08a6c };
-  var CASES = {
+  // Colorways (sRGB hex). Each one names its day colors; evening is derived from them
+  // (the same colors, muted and darker) unless it spells out its own.
+  //   cap: letter keys · mod: edge keys · accent: enter and the yarn-ball escape · kase: the case
+  var COLORWAYS = {
     cream: {
-      day: { kase: 0xe9dcc6, plate: 0xa89a89, cable: 0xf1e8da, caseEdge: 0xb9a990 },
-      eve: { kase: 0x6a6153, plate: 0x2a231c, cable: 0x7d7468, caseEdge: 0x14110e },
+      day: { cap: 0xf6efe3, mod: 0xd9cbb6, accent: 0xd9cbb6, kase: 0xe9dcc6, cable: 0xf1e8da, yarn: 0xcfb99a },
+      eve: { cap: 0x8d8579, mod: 0x6f665a, accent: 0x6f665a, kase: 0x6a6153, cable: 0x7d7468, yarn: 0xa08a6c },
     },
-    chocolate: {
-      day: { kase: 0x3b271d, plate: 0x24170f, cable: 0x47301f, caseEdge: 0x1f140d },
-      eve: { kase: 0x33231a, plate: 0x1c120c, cable: 0x3d2a1f, caseEdge: 0x0e0906 },
-    },
+    moss: { day: { cap: 0xefe6cc, mod: 0xa6b077, accent: 0xecc762, kase: 0x68774a, cable: 0x68774a, yarn: 0xecc762 } },
+    "butter-sage": { day: { cap: 0xf6eed3, mod: 0xa9ba84, accent: 0x7f9763, kase: 0xefd272, cable: 0xa9ba84, yarn: 0x7f9763 } },
+    matcha: { day: { cap: 0xefe9d6, mod: 0x97aa74, accent: 0xc0693f, kase: 0xb9c78e, cable: 0x97aa74, yarn: 0xc0693f } },
+    "forest-honey": { day: { cap: 0xefe6cf, mod: 0xdcae52, accent: 0xdcae52, kase: 0x33503b, cable: 0x33503b, yarn: 0xdcae52 } },
+    pistachio: { day: { cap: 0xf4dd88, mod: 0xa3bb78, accent: 0xec9270, kase: 0xcfdca6, cable: 0xa3bb78, yarn: 0xec9270 } },
   };
-  var caseName = CASES[stage.dataset.case] ? stage.dataset.case : "cream";
+  var colorway = COLORWAYS[stage.dataset.colors] ? stage.dataset.colors : "cream";
+  var tmp = new THREE.Color(), hsl = {};
+  function shade(hex, l, s) { // scale lightness (and saturation) of an sRGB hex
+    tmp.setHex(hex).getHSL(hsl);
+    return tmp.setHSL(hsl.h, Math.min(1, hsl.s * (s || 1)), Math.min(1, hsl.l * l)).getHex();
+  }
+  function palette(name, eve) {
+    var cw = COLORWAYS[name], day = cw.day, p = {};
+    var base = eve ? (cw.eve || {}) : day;
+    ["cap", "mod", "accent", "kase", "cable", "yarn"].forEach(function (k) {
+      p[k] = base[k] !== undefined ? base[k] : shade(day[k], 0.55, 0.45); // the warm glow adds color back
+    });
+    p.plate = shade(day.kase, eve ? 0.2 : 0.62, 0.8);   // under the keys: the case color in shadow
+    p.sw = shade(day.kase, eve ? 0.28 : 0.45, 0.6);
+    p.stem = shade(day.mod, eve ? 0.6 : 0.95);
+    p.caseEdge = eve ? 0x0e0906 : shade(day.kase, 0.72);
+    return p;
+  }
 
   // ── geometry helpers ───────────────────────────────────────────────
   function roundedRect(w, d, r) {
@@ -147,7 +165,8 @@
     var x = -W / 2, z = -D / 2 + (r + 0.5) * U;
     var sculpt = [0.1, 0.05, 0, -0.04, -0.08][r]; // row tilt, like a sculpted profile
     row.forEach(function (kd) {
-      var wu = kd[0], label = kd[1], cx = x + (wu * U) / 2, kind = MODS[label] ? "mod" : "cap";
+      var wu = kd[0], label = kd[1], cx = x + (wu * U) / 2;
+      var kind = label === "enter" || label === "`" ? "accent" : MODS[label] ? "mod" : "cap";
       var sw = new THREE.Mesh(swGeo, M.sw);
       sw.position.set(cx, PLATE_Y + SW_H / 2, z);
       sw.castShadow = sw.receiveShadow = true;
@@ -222,10 +241,8 @@
     for (var k in P) M[k].color.set(P[k]).convertSRGBToLinear(); // sRGB hex in, the renderer works in linear light
   }
   function theme() {
-    var d = dark.matches, c = CASES[caseName][d ? "eve" : "day"];
-    setColors(d ? KEYS_EVE : KEYS_DAY);
-    setColors({ kase: c.kase, plate: c.plate, cable: c.cable });
-    M.caseEdge.color.set(c.caseEdge).convertSRGBToLinear();
+    var d = dark.matches;
+    setColors(palette(colorway, d));
     all.forEach(function (k) { k.mat.color.copy(M[k.kind].color); k.mat.emissiveIntensity = 0; });
     glowOn = d;
     underLights.forEach(function (l) { l.intensity = d ? 3.2 : 0; });
@@ -383,7 +400,8 @@
   resize();
   stage.classList.add("kb-on");
   window.gardenKeyboard = {
-    setCase: function (name) { if (CASES[name]) { caseName = name; stage.dataset.case = name; theme(); render(); } },
+    colorways: Object.keys(COLORWAYS),
+    setColors: function (name) { if (COLORWAYS[name]) { colorway = name; stage.dataset.colors = name; theme(); render(); } },
     typeChar: typeChar,
     pressed: function () { return all.filter(function (k) { return k.press > 0.5; }).map(function (k) { return k.label; }); },
     reducedMotion: reduce.matches,
