@@ -131,6 +131,29 @@ editor (danaadylova.com) → notes API on Railway (/site/posts, signed-in only) 
 - The GitHub token can only touch this one repo's files, and only lives on Railway.
 - Rate limit on saves; every save is a normal commit, so anything can be undone from the repo history.
 
+## The GitHub key (created Oct 1 2026)
+
+Publishing from the editor uses a GitHub key that only the server knows. Keep this so it's easy to renew.
+
+| | |
+|---|---|
+| **What** | A GitHub *fine-grained personal access token* named `danaadylova.com editor` |
+| **Created** | Oct 1 2026, on github.com → profile picture → Settings → Developer settings → Personal access tokens → Fine-grained tokens |
+| **Expires** | about **Oct 1 2027** (1 year). A week before, make a new one (below). When it expires, **publish** says GitHub didn't accept the change; drafts keep working. |
+| **Can do** | Only the repo **danaadylova/danaadylova.github.io**, only **Contents: read and write** (plus GitHub's automatic Metadata: read-only). Nothing else on the account. |
+| **Stored** | Railway → the **ravelry-gauge-matcher** service (not Postgres) → Variables → **`GITHUB_TOKEN`**. Not in any repo, not in the browser. |
+| **Check it's set** | `https://unraveled.danaadylova.com/site/health` → `"blog_editor": {"github_token": true}` |
+
+**To renew** (or replace it if it ever leaks):
+1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → **Generate new token**.
+2. Name `danaadylova.com editor`, expiration 1 year, resource owner danaadylova, **Only select repositories** → danaadylova/danaadylova.github.io.
+3. Permissions → Repository permissions → **Contents: Read and write**. Nothing else.
+4. Generate, copy it (it's shown once).
+5. Railway → ravelry-gauge-matcher → Variables → edit **`GITHUB_TOKEN`** → paste → save → **Deploy** (Railway holds variable edits until you deploy).
+6. Back on GitHub, delete the old token from the same list.
+
+**To turn publishing off** at any time: delete the token on GitHub (or the variable on Railway). The site stays as it is; publish shows an error; nothing else breaks.
+
 ## Out of scope (for now)
 
 - A search box; per-topic pages and feeds; filters on /projects.
