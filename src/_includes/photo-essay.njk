@@ -11,7 +11,7 @@ extraCss: /css/essay.css
   <div class="essay-paper">
   <header class="essay-head">
     <div class="essay-title">
-      <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% if topic %} · <span class="topic">{{ topic }}</span>{% endif %}</p>
+      <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% for t in (topics or topic) | topics %}{% if loop.first %} · {% endif %}<a class="topic" href="/blog/?tag={{ t | tagSlug }}">{{ t }}</a>{% endfor %}</p>
       <h1 data-typed>{{ title }}</h1>
       {% if subtitle %}<p class="essay-sub">{{ subtitle }}</p>{% endif %}
     </div>
