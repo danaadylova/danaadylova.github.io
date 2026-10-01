@@ -150,14 +150,13 @@
         after(1150, function () { v.remove(); switching = false; });
       });
     } else {
-      // daylight sweeps down from the top, over the keyboard already back in place
-      var d = veil("day");
-      d.style.setProperty("--day", matchMedia("(prefers-color-scheme: dark)").matches ? "#0e0d0c" : "#fbfaf4");
-      after(520, function () {
+      // the same flicker going back: the lamp stutters out, then the room comes back up from where it stood
+      var w = veil("off");
+      after(560, function () {
         setRetro(false);
-        d.classList.add("gone");
-        if (retype) after(300, retype);
-        after(520, function () { d.remove(); switching = false; });
+        w.classList.add("warm");
+        if (retype) after(350, retype);
+        after(1150, function () { w.remove(); switching = false; });
       });
     }
   }
