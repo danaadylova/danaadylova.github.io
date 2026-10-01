@@ -12,7 +12,7 @@ extraCss: /css/essay.css
   <header class="essay-head">
     <div class="essay-title">
       <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% if topic %} · <span class="topic">{{ topic }}</span>{% endif %}</p>
-      <h1 data-typed>{{ title }}</h1>
+      <h1 data-typed data-full="{{ title }}">{{ title }}</h1>
       {% if subtitle %}<p class="essay-sub">{{ subtitle }}</p>{% endif %}
     </div>
     <div class="essay-cam" data-camera-box>
