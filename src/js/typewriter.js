@@ -1,7 +1,7 @@
 // The 3D typewriter for retro mode on the home page (three.js r128, loaded before this file).
 // It is only built when retro mode is on (retro.js calls gardenTypewriter.start()). Like the
 // keyboard, it types the prompt with garden.js ("garden:key" events); then it types the opening
-// of a random blog post (#tw-entries, built in index.njk) and links to it under the machine.
+// of a random blog post (#tw-entries, built in index.njk).
 // Visitors can click its keys, pull the return lever, or type on their own keyboard: the letters
 // land on its paper. With "typing sounds" on it clacks, rings its margin bell and ratchets.
 // Markup: <div class="tw" data-tw aria-hidden="true"></div>
@@ -446,7 +446,6 @@
     // ── a random blog note, typed after the prompt ───────────────────
     var entries = [], auto = [], autoNext = 0, lastEntry = -1, WRAP = MAXCOL - 1;
     try { entries = JSON.parse(document.getElementById("tw-entries").textContent); } catch (e) {}
-    var source = document.querySelector("[data-tw-source]");
     function clean(s) { // only what the machine has keys for
       s = String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"')
         .replace(/[\u2013\u2014]/g, "-").replace(/\u2026/g, "...").replace(/\s+/g, " ").trim();
@@ -488,11 +487,6 @@
       auto.push({ ch: "\n", d: 0.8 });       // and one after the title
       wrap(clean(opening(e.text))).forEach(type);
       autoNext = clock + 1.1;
-      if (source) {
-        var a = source.querySelector("a");
-        a.href = e.url; a.textContent = e.title;
-        source.hidden = false;
-      }
     }
 
     // ── simulation ───────────────────────────────────────────────────

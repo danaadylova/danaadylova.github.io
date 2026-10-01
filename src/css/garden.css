@@ -225,15 +225,15 @@ h1[data-typed] { min-height: 1.3em; }
 .kb canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 html:not(.js) .kb { display: none; }
 @media (max-width: 519px) { .kb { aspect-ratio: 1.8 / 1; } }
-@media print { .kb, .tw, .switches, .tw-source { display: none; } }
+@media print { .kb, .tw, .switches { display: none; } }
 
 @media screen {
-/* retro mode (garden.js; switches on the home page and in every footer): the whole site goes dark,
-   warmer and browner than evening mode, like a desk under a lamp; on the home page the typewriter
-   replaces the keyboard. Screen only, so the resume still prints light. */
+/* retro mode (garden.js; switches on the home page and in every footer): the whole site goes dark, on the
+   evening near-black with warm text accents; on the home page the typewriter replaces the keyboard.
+   Screen only, so the resume still prints light. */
 html.retro {
   color-scheme: dark;
-  --paper: #110e0b;
+  --paper: #0e0d0c;
   --dot: transparent;
   --card: #1c1813;
   --card-border: #3a3129;
@@ -251,14 +251,11 @@ html.retro {
   --wip-ink: #d8b46e;
   --wip-line: #6b5a2c;
 }
-/* the prototype's desk at night: a warm pool of lamp light behind the typewriter, near-black at the edges, no dot grid.
-   Painted on body as well as html (fixed to the viewport, so the two line up exactly): a page host that gives
-   body its own background, like the preview, would otherwise cover it and leave retro mode white. */
+/* the same near-black as evening mode, without the dot grid. Painted on body as well as html: a page host that
+   gives body its own background, like the Claude preview, would otherwise cover it and leave retro mode white. */
 html.retro, html.retro body {
-  background-color: #110e0b !important;
-  background-image: radial-gradient(ellipse 70% 52% at 50% 36%, #33271c 0%, #1d1712 45%, rgba(17, 14, 11, 0) 78%) !important;
-  background-size: auto !important;
-  background-attachment: fixed !important;
+  background-color: #0e0d0c !important;
+  background-image: none !important;
 }
 html.retro .note-figure img { filter: brightness(.92); }
 }
@@ -312,9 +309,6 @@ html:not(.js) .switches { display: none; }
 .switch:focus-visible .track { outline: 2px solid var(--terra); outline-offset: 2px; }
 .switch[aria-checked="true"] .track { background: var(--terra); border-color: var(--terra); }
 .switch[aria-checked="true"] .knob { transform: translateX(0.95rem); background: var(--paper); }
-.tw-source { display: none; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); text-align: right; margin: 0.25rem 0 0; }
-html.retro .tw-source:not([hidden]) { display: block; }
-.tw-source a { color: var(--terra); }
 .intro em { font-style: normal; color: inherit; }
 
 .note-meta { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-bottom: -0.5rem; }
