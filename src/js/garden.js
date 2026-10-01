@@ -111,20 +111,64 @@
     });
   }
   retroLabel();
-  retroToggles.forEach(function (b) {
-    b.addEventListener("click", function () {
-      var on = !root.classList.contains("retro");
+  function setRetro(on) {
+    root.classList.toggle("retro", on);
+    retroLabel();
+    try { localStorage.setItem(RKEY, on ? "on" : "off"); } catch (e) {}
+    document.dispatchEvent(new CustomEvent("garden:retro", { detail: { on: on } }));
+  }
+  function veil(kind) { // a full-screen layer for the light changing (styles: .lamp-veil in garden.css)
+    var v = document.createElement("div");
+    v.className = "lamp-veil " + kind;
+    v.setAttribute("aria-hidden", "true");
+    document.body.appendChild(v);
+    return v;
+  }
+  function after(ms, fn) { setTimeout(fn, ms); }
+  var switching = false;
+  function toggleRetro() {
+    if (switching) return;
+    var on = !root.classList.contains("retro");
+    var kb = window.gardenKeyboard, tw = window.gardenTypewriter, retype = window.gardenRetype;
+    var home = !!document.querySelector("[data-tw]");
+    var noop = function (cb) { cb(); };
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { // just a quiet fade
       root.classList.add("retro-fade");
-      root.classList.toggle("retro", on);
-      retroLabel();
-      try { localStorage.setItem(RKEY, on ? "on" : "off"); } catch (e) {}
-      setTimeout(function () { root.classList.remove("retro-fade"); }, 700);
-      document.dispatchEvent(new CustomEvent("garden:retro", { detail: { on: on } }));
-      // home page: whichever machine just appeared types the prompt again
-      var ready = on ? (window.gardenTypewriter ? window.gardenTypewriter.start() : false) : true;
-      if (ready && window.gardenRetype) setTimeout(window.gardenRetype, 450);
-    });
-  });
+      setRetro(on);
+      after(700, function () { root.classList.remove("retro-fade"); });
+      if ((on ? tw && tw.start() : true) && retype) after(450, retype);
+      return;
+    }
+    switching = true;
+    if (on) {
+      // the keycaps pop off, the room light flickers out, then the lamp warms up on the typewriter as it assembles
+      (home && kb && kb.exit ? kb.exit : noop)(function () {
+        var v = veil("off");
+        after(560, function () {
+          setRetro(true);
+          var built = home && tw && tw.start();
+          if (built && tw.prepare) tw.prepare();
+          v.classList.add("warm");
+          after(200, function () { if (built && tw.enter) tw.enter(retype); else if (retype) retype(); });
+          after(1150, function () { v.remove(); switching = false; });
+        });
+      });
+    } else {
+      // the typewriter packs up, daylight sweeps down from the top, and the keycaps drop back on
+      (home && tw && tw.started && tw.exit ? tw.exit : noop)(function () {
+        var v = veil("day");
+        v.style.setProperty("--day", matchMedia("(prefers-color-scheme: dark)").matches ? "#0e0d0c" : "#fbfaf4");
+        after(520, function () {
+          setRetro(false);
+          if (home && kb && kb.prepare) kb.prepare();
+          v.classList.add("gone");
+          after(120, function () { if (home && kb && kb.enter) kb.enter(retype); else if (retype) retype(); });
+          after(520, function () { v.remove(); switching = false; });
+        });
+      });
+    }
+  }
+  retroToggles.forEach(function (b) { b.addEventListener("click", toggleRetro); });
 
   window.gardenThock = thock; // the 3D keyboard plays the same sound when its keys are clicked
   // the typewriter makes its own sounds (clack, bell, ratchet) through the same switch and audio context
