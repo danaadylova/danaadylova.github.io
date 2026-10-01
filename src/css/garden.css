@@ -259,8 +259,8 @@ html.retro, html.retro body {
 }
 html.retro .note-figure img { filter: brightness(.92); }
 }
-/* switching retro mode (garden.js): the room light flickers out and the lamp warms up from where the
-   typewriter sits; going back, daylight sweeps down from the top. Reduced motion gets a plain fade. */
+/* switching retro mode (garden.js), both ways: the light flickers out, then the new mode comes up from where
+   the typewriter's lamp sits. Reduced motion gets a plain fade. */
 @property --lamp-r { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
 .lamp-veil { position: fixed; inset: 0; z-index: 1000; pointer-events: none; }
 .lamp-veil.off { background: #0b0907; animation: lamp-out .56s linear both; }
@@ -274,14 +274,6 @@ html.retro .note-figure img { filter: brightness(.92); }
   0% { --lamp-r: 0%; opacity: 1; } 12% { --lamp-r: 16%; } 18% { --lamp-r: 6%; } 30% { --lamp-r: 26%; }
   80% { --lamp-r: 95%; opacity: 1; } 100% { --lamp-r: 140%; opacity: 0; }
 }
-.lamp-veil.day {
-  inset: auto 0; top: -70vh; height: 170vh;
-  background: linear-gradient(to bottom, var(--day, #fbfaf4) 0%, var(--day, #fbfaf4) 64%, transparent 100%);
-  animation: daylight .52s cubic-bezier(.55, 0, .25, 1) both;
-  transition: opacity .45s ease;
-}
-@keyframes daylight { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-.lamp-veil.day.gone { opacity: 0; }
 
 .tw { display: none; position: relative; z-index: 0; width: 100%; aspect-ratio: 16 / 10.5; margin: 0.25rem 0 -0.5rem; }
 /* the desk lamp's glow behind the typewriter: it breathes slowly, and flickers now and then

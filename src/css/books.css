@@ -102,7 +102,7 @@ html.page-books {
   --sheet: #171514;
   --sheet-2: #211e1c;
   --field: #121110;
-  --glow: rgba(255,186,105,.17);
+  --glow: rgba(255,186,105,.27); /* retro: the shelf lamp is a bit brighter */
   --dusk: rgba(0,0,0,.88);
   --spot: rgba(255,196,120,.11);
   --label-bg: #f0e9dd;
@@ -117,10 +117,19 @@ html.page-books {
   --steam-rgb: 238,230,216;
   --steam-a: .12;
 }
-  html.retro .room::before { opacity: .55; }
+  html.retro .room::before { opacity: .75; animation: shelf-flicker 9s linear infinite; }
   html.retro .room.lit::before { opacity: 1; }
+  /* each shelf's lamp stutters on its own rhythm, so they don't blink together */
+  html.retro .year:nth-child(3n+2) .room::before { animation-duration: 11.5s; animation-delay: -4s; }
+  html.retro .year:nth-child(3n) .room::before { animation-duration: 13s; animation-delay: -8s; }
   html.retro .pin { color: #2b211a; }
 }
+@keyframes shelf-flicker { /* steady most of the time, then a quick stutter like an old bulb */
+  0%, 60%, 100% { filter: brightness(1); }
+  61% { filter: brightness(.4); } 62% { filter: brightness(1.05); } 63.5% { filter: brightness(.25); }
+  65% { filter: brightness(1); } 68% { filter: brightness(.7); } 69.5% { filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) { html.retro .room::before { animation: none; } }
 /* Page-level atmosphere (only on /books) */
 html.page-books { transition: background-color 500ms ease; }
 html.page-books body::after { /* paper grain, very faint */
