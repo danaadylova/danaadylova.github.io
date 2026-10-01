@@ -2,8 +2,18 @@
    A big serif title with the line-drawn camera beside it, then photos on a 12-column grid with a side note,
    a pull quote and numbered captions. Colors are garden.css tokens only, so retro and evening mode just work. */
 
-html.page-essay { background-image: none; }          /* plain paper, like a printed page */
 html.page-essay body { max-width: 74rem; }
+
+/* The site's dot grid shows above the title and again after the sign-off; the camera and the photos sit on
+   plain paper, like a printed spread. The paper is a full-width band behind .essay-paper (a border-image
+   outset, which paints edge to edge without making the page scroll sideways) that fades in and out over
+   its padding, so the dots thin out instead of stopping at a line. */
+.essay-paper {
+  --fade: 4.5rem;
+  padding-block: var(--fade);
+  margin-bottom: calc(-1 * var(--fade));   /* the bottom fade sits in the gap above the older/newer links */
+  border-image: linear-gradient(to bottom, transparent, var(--paper) var(--fade), var(--paper) calc(100% - var(--fade)), transparent) fill 0 / 0 / 0 100vw;
+}
 
 /* ── the head: title on the left, the camera on the right ── */
 .essay-head { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-bottom: 2.5rem; }
@@ -25,7 +35,7 @@ html.page-essay body { max-width: 74rem; }
 html:not(.js) .essay-cam { display: none; }
 
 @media (min-width: 760px) {
-  .essay-head { grid-template-columns: 5fr 6fr; gap: 2rem; align-items: center; margin: 1rem 0 3rem; }
+  .essay-head { grid-template-columns: 5fr 6fr; gap: 2rem; align-items: center; margin: 0 0 3rem; }
 }
 
 /* ── the grid ── */
