@@ -409,7 +409,7 @@ html.retro .tw-source:not([hidden]) { display: block; }
 .ls-long li:hover a { color: var(--terra); }
 .ls-long .what { font-family: var(--sans); color: var(--body); font-size: 0.95rem; }
 .ls-long .info { color: var(--muted); font-size: 0.78rem; text-align: right; }
-.ls-long .info i { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
+.ls-long .info i { font-style: normal; color: var(--ink); } /* the current book: same type as "reading", a touch brighter */
 .js .ls-long { opacity: 0; transition: opacity 0.5s ease; }
 html.js body.typed-done .ls-long { opacity: 1; }
 @media (max-width: 640px) {
