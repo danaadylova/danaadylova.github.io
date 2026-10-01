@@ -1,0 +1,33 @@
+---
+layout: base.njk
+pageClass: page-essay
+extraCss: /css/essay.css
+---
+{#- A photo post: a big serif title with the line-drawn camera beside it, then the photos on a 12-column
+    editorial grid (see the frame / aside / pull shortcodes in eleventy.config.js and src/css/essay.css). -#}
+{%- set older = collections.post | getPreviousCollectionItem %}
+{%- set newer = collections.post | getNextCollectionItem %}
+<article class="note essay-page">
+  <header class="essay-head">
+    <div class="essay-title">
+      <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% if topic %} · <span class="topic">{{ topic }}</span>{% endif %}</p>
+      <h1 data-typed>{{ title }}</h1>
+      {% if subtitle %}<p class="essay-sub">{{ subtitle }}</p>{% endif %}
+    </div>
+    <div class="essay-cam" data-camera-box>
+      <div class="cam-stage" data-camera role="img" aria-label="A line drawing of a 35 mm film camera with two film rolls beside it. Every few seconds it focuses, takes a picture and winds on."></div>
+      <p class="cam-line" aria-hidden="true"><span class="p">~/dana $</span> <span data-camera-status>frame 12 of 36</span><button type="button" data-camera-shoot>take a picture</button></p>
+    </div>
+  </header>
+  <div class="essay">
+{{ content | safe }}
+  </div>
+  <nav class="post-nav" aria-label="More notes">
+    <div>{% if older %}<span class="dir">← older</span><a href="{{ older.url }}">{{ older.data.title }}</a>{% endif %}</div>
+    <div class="newer">{% if newer %}<span class="dir">newer →</span><a href="{{ newer.url }}">{{ newer.data.title }}</a>{% endif %}</div>
+  </nav>
+  <p class="back"><a class="wikilink" href="/blog/">all notes</a></p>
+</article>
+<script src="/js/vendor/three.r128.min.js" defer></script>
+<script src="/js/camera.js?v={{ build.v }}" defer></script>
+<script src="/js/essay.js?v={{ build.v }}" defer></script>

@@ -1,0 +1,96 @@
+{
+  "california": {
+    "bench": {
+      "w": 4898,
+      "h": 3265,
+      "large": 1600,
+      "small": 800,
+      "color": "#7b7572",
+      "camera": "Fujifilm X-T30 II",
+      "lens": "27 mm",
+      "taken": "2024-09-07"
+    },
+    "bluff": {
+      "w": 1565,
+      "h": 1037,
+      "large": 1565,
+      "small": 800,
+      "color": "#b5b6aa",
+      "film": true
+    },
+    "boat": {
+      "w": 1565,
+      "h": 1037,
+      "large": 1565,
+      "small": 800,
+      "color": "#858578",
+      "film": true
+    },
+    "campus": {
+      "w": 1544,
+      "h": 1024,
+      "large": 1544,
+      "small": 800,
+      "color": "#504e3d",
+      "film": true
+    },
+    "cliff": {
+      "w": 1565,
+      "h": 1037,
+      "large": 1565,
+      "small": 800,
+      "color": "#96a095",
+      "film": true
+    },
+    "cove": {
+      "w": 1544,
+      "h": 1024,
+      "large": 1544,
+      "small": 800,
+      "color": "#696a5e",
+      "film": true
+    },
+    "driftwood": {
+      "w": 1565,
+      "h": 1037,
+      "large": 1565,
+      "small": 800,
+      "color": "#8c9278",
+      "film": true
+    },
+    "fog": {
+      "w": 4898,
+      "h": 3265,
+      "large": 1600,
+      "small": 800,
+      "color": "#84786b",
+      "camera": "Fujifilm X-T30 II",
+      "lens": "27 mm",
+      "taken": "2024-09-08"
+    },
+    "santa-monica": {
+      "w": 1024,
+      "h": 1544,
+      "large": 1024,
+      "small": 800,
+      "color": "#998c7d",
+      "film": true
+    },
+    "seal": {
+      "w": 1544,
+      "h": 1024,
+      "large": 1544,
+      "small": 800,
+      "color": "#bcb6ae",
+      "film": true
+    },
+    "surfers": {
+      "w": 1565,
+      "h": 1037,
+      "large": 1565,
+      "small": 800,
+      "color": "#a4b9b7",
+      "film": true
+    }
+  }
+}
