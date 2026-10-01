@@ -398,7 +398,7 @@ html:not(.js) .switches { display: none; }
 .project-links .not-yet { color: var(--muted); }
 
 /* ── refresh: home ls -l, blog cards, post meta + next/prev ─────────────── */
-.intro { font-size: 1.15rem; margin: 0.5rem 0 1.5rem; color: var(--ink); }
+.intro { font-family: var(--serif); font-weight: 400; font-size: 1.3rem; line-height: 1.55; margin: 0.5rem 0 1.5rem; color: var(--ink); }   /* IM Fell English, like the titles */
 .ls-long { list-style: none; padding: 0; margin: 0 0 2rem; font-family: var(--mono); font-size: 0.88rem; border-top: 1px dashed var(--card-border); }
 .ls-long li { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: 1rem; align-items: baseline; padding: 0.6rem 0.25rem; border-bottom: 1px dashed var(--card-border); }
 .ls-long a { color: var(--olive); text-decoration: none; font-weight: 700; }
