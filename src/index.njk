@@ -7,7 +7,7 @@ extraFonts: https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&
 ---
 {%- set posts = collections.post | reverse -%}
 {%- set live = [] -%}{%- for p in collections.project -%}{%- if p.data.status == "live" -%}{%- set live = (live.push(p), live) -%}{%- endif -%}{%- endfor -%}
-<p class="intro">Hi, I'm Dana — developer and crafter in the Bay Area. I like building small, useful things, usually related to <em>code</em> and <em>yarn</em>.</p>
+<p class="intro">Hi, you’re visiting the personal website of Dana Adylova — developer and crafter, living in the Bay Area. I like building small, useful things, usually related to <em>code</em> and <em>yarn</em>. This website is used as a creative outlet, a mix of personal projects, blog, and other random things I find interesting.</p>
 
 <div class="switches">
   <button type="button" class="switch" role="switch" aria-checked="false" data-retro-switch>retro mode<span class="track" aria-hidden="true"><span class="knob"></span></span></button>

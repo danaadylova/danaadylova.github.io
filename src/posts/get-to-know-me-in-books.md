@@ -1,5 +1,5 @@
 ---
-title: get to know me in books
+title: know me in books
 date: 2026-09-29
 topic: books
 templateEngineOverride: njk,md
@@ -49,6 +49,6 @@ These are some of my most favorite series and books - some of them I reread ever
 - Anarchy and chaos! If you love absurdist humor and games.
 {% endfavorite %}
 
-<p class="card-links">my reading cards, year by year:
+<p class="card-links">bookish journey, year by year:
 {%- for y in books.cardYears | reverse %} <a href="/books/{{ y }}/">{{ y }}</a>{% if not loop.last %} ·{% endif %}{% endfor %}
 </p>

@@ -19,6 +19,7 @@ html.page-essay body { max-width: 74rem; }
 .essay-head { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-bottom: 2.5rem; }
 .essay-title .note-meta { margin-bottom: 0; }
 .essay-page h1 {
+  white-space: nowrap;   /* one line, also while it types: the typing cursor used to push the last word down */
   font-size: clamp(2.8rem, 7vw, 5.4rem);
   line-height: 0.98;
   letter-spacing: -0.02em;
@@ -35,7 +36,7 @@ html.page-essay body { max-width: 74rem; }
 html:not(.js) .essay-cam { display: none; }
 
 @media (min-width: 760px) {
-  .essay-head { grid-template-columns: 5fr 6fr; gap: 2rem; align-items: center; margin: 0 0 3rem; }
+  .essay-head { grid-template-columns: auto minmax(0, 1fr); gap: 2.5rem; align-items: center; margin: 0 0 3rem; }   /* the title column fits the title */
 }
 
 /* ── the grid ── */
