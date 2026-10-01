@@ -2,8 +2,8 @@
 title: dear california
 subtitle: Photographs on 35 mm film & Fujifilm.
 description: A love letter to the most breathtaking place on earth, from Timber Cove to SoCal, on 35 mm film and Fujifilm.
-date: 2026-09-30
-topic: photography
+date: 2026-10-01
+topics: [photography]
 layout: photo-essay.njk
 album: california
 templateEngineOverride: njk,md
