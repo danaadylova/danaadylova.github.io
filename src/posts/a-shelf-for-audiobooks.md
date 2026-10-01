@@ -9,4 +9,4 @@ I still read physical books once in a while, but the majority of my crafting tim
 
 Hence, this new project with [the books](/books/). It was a fun one to vibe code and I honestly love that I can now sort them out by most favorited.
 
-→ [browse the shelves on /books](/books/)
+→ [browse the shelves](/books/)
