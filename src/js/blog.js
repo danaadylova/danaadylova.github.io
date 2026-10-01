@@ -6,7 +6,6 @@
   nav.hidden = false;
   var btns = Array.prototype.slice.call(nav.querySelectorAll(".tf-tag"));
   var arg = nav.querySelector("[data-arg]"), live = nav.querySelector("[data-tf-live]");
-  var items = Array.prototype.slice.call(document.querySelectorAll(".post-cards li"));
   var known = btns.map(function (b) { return b.getAttribute("data-tag"); });
   var current = "", typing = null;
 
@@ -24,15 +23,17 @@
     current = t;
     btns.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-tag") === t)); });
     var shown = 0;
-    items.forEach(function (li) {
+    Array.prototype.forEach.call(document.querySelectorAll(".post-cards li"), function (li) {   // drafts too
       var hit = !t || (li.getAttribute("data-topics") || "").split("|").indexOf(t) > -1;
       if (hit && li.hidden) { li.classList.remove("tf-in"); void li.offsetWidth; li.classList.add("tf-in"); }
-      li.hidden = !hit; if (hit) shown++;
+      li.hidden = !hit; if (hit && !li.closest("[data-drafts]")) shown++;
     });
     Array.prototype.forEach.call(document.querySelectorAll(".year-head"), function (h) {
       var ol = h.nextElementSibling, any = ol && Array.prototype.some.call(ol.children, function (li) { return !li.hidden; });
       h.hidden = !any; if (ol) ol.hidden = !any;
     });
+    var drafts = document.querySelector("[data-drafts]");   // the signed-in drafts box hides when none match
+    if (drafts && drafts.getAttribute("data-count") !== "0") drafts.hidden = !drafts.querySelector(".draft-cards li:not([hidden])");
     if (fromUser) {
       retype(word(t));
       live.textContent = t ? shown + (shown === 1 ? " note" : " notes") + " about " + t : "all " + shown + " notes";
@@ -49,6 +50,7 @@
       nav.scrollIntoView({ block: "nearest" });
     });
   });
+  window.gardenBlog = { refresh: function () { set(current, false); } };   // blog-author.js adds drafts later
   var q = new URLSearchParams(location.search).get("tag");
   set(q ? q.replace(/-/g, " ").toLowerCase() : "", false);
 })();
