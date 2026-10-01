@@ -206,7 +206,7 @@
       face.position.y = 0.044;
       r.add(cap);
       scene.add(r);
-      var k = { label: label, root: r, cap: cap, restY: restY, press: 0, v: 0, target: 0, releaseAt: 0, bar: null, x: x, z: z, pop: 0, pa: null };
+      var k = { label: label, root: r, cap: cap, restY: restY, press: 0, v: 0, target: 0, releaseAt: 0, bar: null, x: x };
       r.userData.key = k;
       keys[label] = k; allKeys.push(k); clickable.push(r);
       return k;
@@ -232,7 +232,7 @@
         var arm = add(sb, new THREE.BoxGeometry(0.06, armH, 0.06), M.steel); arm.position.set(sx * (w / 2 - 0.5), -armH / 2, -0.04);
       });
       scene.add(sb);
-      var k = { label: " ", root: sb, restY: y, press: 0, v: 0, target: 0, releaseAt: 0, bar: null, x: 0.3, z: z, pop: 0, pa: null };
+      var k = { label: " ", root: sb, restY: y, press: 0, v: 0, target: 0, releaseAt: 0, bar: null };
       sb.userData.key = k;
       keys[" "] = k; allKeys.push(k); clickable.push(sb);
     })();
@@ -292,7 +292,6 @@
       var t = s - ARC, z1 = PC.z + PR * Math.cos(A1), y1 = PC.y + PR * Math.sin(A1);
       return { z: z1 - Math.sin(A1) * t, y: y1 + Math.cos(A1) * t };
     }
-    var paperMesh, PAPER_N = 70;
     var PX = 1024 / PAPER_W, CW = 0.155, LH = 0.29, XL = -2.15, MAXCOL = 27, FS = 50;
     var paperCanvas = document.createElement("canvas");
     paperCanvas.width = 1024; paperCanvas.height = Math.round(SP * PX);
@@ -300,7 +299,7 @@
     paperTex.encoding = THREE.sRGBEncoding;
     paperTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     (function () {
-      var N = PAPER_N, pos = [], uv = [], idx = [];
+      var N = 70, pos = [], uv = [], idx = [];
       for (var i = 0; i <= N; i++) {
         var s = (i / N) * SP, p = pathAt(s);
         for (var j = 0; j < 2; j++) { pos.push((j - 0.5) * PAPER_W, p.y, p.z); uv.push(j, s / SP); }
@@ -310,7 +309,7 @@
       g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
       g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
       g.setIndex(idx); g.computeVertexNormals();
-      paperMesh = add(carriage, g, new THREE.MeshStandardMaterial({ map: paperTex, roughness: 0.95, side: THREE.DoubleSide, envMapIntensity: 0.35 }));
+      add(carriage, g, new THREE.MeshStandardMaterial({ map: paperTex, roughness: 0.95, side: THREE.DoubleSide, envMapIntensity: 0.35 }));
       var t = pathAt(ARC + 0.85);                      // paper table behind the sheet
       var table = add(carriage, new THREE.BoxGeometry(PLAT_L - 0.6, 1.7, 0.05), M.lacquer);
       table.position.set(0, t.y - 0.07 * Math.sin(A1), t.z - 0.07 * Math.cos(A1));
@@ -499,13 +498,6 @@
     // ── simulation ───────────────────────────────────────────────────
     var UP = 0.055, DOWN = 0.17;
     function ease(u) { return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
-    // retro mode swap (garden.js): the machine assembles itself, or packs up
-    var A = { slide: 0, paper: 1 }, tweens = [];
-    function easeOutBack(u) { var c = 1.7; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); }
-    function easeOut(u) { return 1 - Math.pow(1 - u, 3); }
-    function easeIn(u) { return u * u * u; }
-    function tween(key, to, delay, dur, ez) { tweens.push({ key: key, from: null, to: to, start: clock + delay, dur: dur, ez: ez }); }
-
     function step(dt) {
       clock += dt;
       if (auto.length && clock >= autoNext && !queue.length && !returning) {
@@ -522,16 +514,7 @@
         k.press = Math.max(-0.08, Math.min(1.02, k.press + k.v * dt));
         if (k.target || Math.abs(k.press) > 0.0005 || Math.abs(k.v) > 0.005) busy = true;
         else { k.press = 0; k.v = 0; }
-        var p0 = k.pop;
-        if (k.pa) {
-          busy = true;
-          var pu = (clock - k.pa.start) / k.pa.dur;
-          if (pu >= 1) { p0 = k.pa.to; k.pa = null; }
-          else if (pu >= 0) p0 = k.pa.to ? pu * pu * (2.4 * pu - 1.4) : 1 - easeOutBack(pu);
-          k.pop = p0;
-        }
-        k.root.position.y = k.restY - k.press * TRAVEL + (p0 > 0 ? p0 * 2.6 : p0 * 0.3);
-        k.root.scale.setScalar(Math.max(0.001, 1 - Math.max(0, Math.min(1, p0))));
+        k.root.position.y = k.restY - k.press * TRAVEL;
         if (k.cap) k.cap.rotation.x = 0.28 + k.press * 0.08;
         var b = k.bar;
         if (b && b.t >= 0) {
@@ -568,17 +551,7 @@
         carX += carV * dt;
         if (Math.abs(carTarget - carX) > 0.0005 || Math.abs(carV) > 0.002) busy = true;
       }
-      for (var ti = tweens.length - 1; ti >= 0; ti--) {
-        var tw = tweens[ti];
-        busy = true;
-        if (clock < tw.start) continue;
-        if (tw.from === null) tw.from = A[tw.key];
-        var tu = Math.min(1, (clock - tw.start) / tw.dur);
-        A[tw.key] = tw.from + (tw.to - tw.from) * tw.ez(tu);
-        if (tu >= 1) tweens.splice(ti, 1);
-      }
-      carriage.position.x = carX + A.slide;
-      paperMesh.geometry.setDrawRange(0, Math.round(A.paper * PAPER_N) * 6);
+      carriage.position.x = carX;
       return busy;
     }
 
@@ -673,28 +646,6 @@
     setColumn(0); carX = carTarget; carriage.position.x = carX;
     resize();
     stage.classList.add("tw-on");
-    api.prepare = function () { // hidden, ready to assemble on a fresh sheet
-      queue.length = 0; auto = []; tweens.length = 0; returning = null;
-      lines = [[]]; feed = 0; setColumn(0); carX = carTarget; carV = 0;
-      allKeys.forEach(function (k) { k.pa = null; k.pop = 1; k.press = 0; k.v = 0; k.target = 0; });
-      A.slide = 9; A.paper = 0;
-      drawPaper(); step(0); renderer.render(scene, camera);
-    };
-    api.enter = function (cb) { // keys drop in row by row, the carriage slides in, the paper rises
-      allKeys.forEach(function (k) { k.pa = { to: 0, start: clock + (k.z - 1.45) / 2.3 * 0.55 + (k.x + 4.5) / 9 * 0.12, dur: 0.45 }; });
-      tween("slide", 0, 0.35, 0.75, easeOut);
-      tween("paper", 1, 0.95, 0.55, easeOut);
-      wake();
-      if (cb) setTimeout(cb, 1650);
-    };
-    api.exit = function (cb) { // the paper sinks, the keys lift off front to back, the carriage slides away
-      queue.length = 0; auto = [];
-      tween("paper", 0, 0, 0.35, easeIn);
-      allKeys.forEach(function (k) { k.pa = { to: 1, start: clock + 0.15 + (3.74 - k.z) / 2.3 * 0.35 + Math.random() * 0.05, dur: 0.35 }; });
-      tween("slide", 9, 0.3, 0.55, easeIn);
-      wake();
-      if (cb) setTimeout(cb, 950);
-    };
     api.text = function () { return lines.slice().reverse().map(function (l) { var a = []; l.forEach(function (g) { a[g.k] = g.ch; }); return Array.from(a, function (c) { return c || " "; }).join(""); }); };
     api.step = function (n) { for (var i = 0; i < n; i++) step(1 / 60); renderer.render(scene, camera); };
     api.screenPos = function (label) {
