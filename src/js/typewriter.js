@@ -60,7 +60,8 @@
       pm.dispose();
     })();
 
-    var lamp = new THREE.DirectionalLight(0xffd3a0, 2.1);
+    var poolMat, LAMP = 2.1;
+    var lamp = new THREE.DirectionalLight(0xffd3a0, LAMP);
     lamp.position.set(-7, 13, 9);
     lamp.castShadow = true;
     lamp.shadow.mapSize.set(2048, 2048);
@@ -101,6 +102,7 @@
       var pool = new THREE.Mesh(new THREE.PlaneGeometry(17, 12), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
       pool.rotation.x = -Math.PI / 2; pool.position.set(-0.5, 0.01, 0.5);
       scene.add(pool);
+      poolMat = pool.material;
     })();
 
     var redraws = []; // canvases that redraw once the web fonts arrive
@@ -501,6 +503,16 @@
       }
       process();
       var busy = queue.length > 0 || !!returning || auto.length > 0;
+      if (flick) { // the lamp stutters: the light on the machine and the pool on the desk dip together
+        busy = true;
+        var ft = clock - flick, lv = 1;
+        for (var fi = 1; fi < FLICK.length; fi++) {
+          if (ft <= FLICK[fi][0]) { var f0 = FLICK[fi - 1], f1 = FLICK[fi]; lv = f0[1] + (f1[1] - f0[1]) * (ft - f0[0]) / (f1[0] - f0[0]); break; }
+        }
+        if (ft > FLICK[FLICK.length - 1][0]) { flick = null; lv = 1; }
+        lamp.intensity = LAMP * (0.35 + 0.65 * lv);
+        poolMat.opacity = lv;
+      }
       allKeys.forEach(function (k) {
         if (k.target && clock >= k.releaseAt) k.target = 0;
         var stiff = k.target ? 900 : 380, damp = k.target ? 50 : 22;
@@ -562,6 +574,20 @@
       camera.updateProjectionMatrix();
       renderer.render(scene, camera);
     }
+    // ── the lamp flickers now and then (and the glow behind the machine with it: .tw.flicker in garden.css)
+    var FLICK = [[0, 1], [0.05, 0.45], [0.09, 0.95], [0.16, 0.3], [0.22, 1], [0.3, 0.7], [0.36, 1]], flick = null;
+    var still = matchMedia("(prefers-reduced-motion: reduce)");
+    (function nextFlicker() {
+      setTimeout(function () {
+        if (retro() && visible && !document.hidden && !still.matches) {
+          flick = clock;
+          stage.classList.remove("flicker"); void stage.offsetWidth; stage.classList.add("flicker");
+          wake();
+        }
+        nextFlicker();
+      }, 5000 + Math.random() * 11000);
+    })();
+
     var running = false, last = 0, visible = true;
     function frame(now) {
       if (!running) return;
