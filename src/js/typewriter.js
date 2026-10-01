@@ -1,7 +1,7 @@
 // The 3D typewriter for retro mode on the home page (three.js r128, loaded before this file).
 // It is only built when retro mode is on (retro.js calls gardenTypewriter.start()). Like the
 // keyboard, it types the prompt with garden.js ("garden:key" events); then it types the opening
-// of a random blog post (#tw-entries, built in index.njk) and links to it under the machine.
+// of a random blog post (#tw-entries, built in index.njk).
 // Visitors can click its keys, pull the return lever, or type on their own keyboard: the letters
 // land on its paper. With "typing sounds" on it clacks, rings its margin bell and ratchets.
 // Markup: <div class="tw" data-tw aria-hidden="true"></div>
@@ -60,7 +60,8 @@
       pm.dispose();
     })();
 
-    var lamp = new THREE.DirectionalLight(0xffd3a0, 2.1);
+    var poolMat, LAMP = 2.1;
+    var lamp = new THREE.DirectionalLight(0xffd3a0, LAMP);
     lamp.position.set(-7, 13, 9);
     lamp.castShadow = true;
     lamp.shadow.mapSize.set(2048, 2048);
@@ -89,7 +90,7 @@
       return m;
     }
 
-    var ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.ShadowMaterial({ opacity: 0.55 }));
+    var ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.ShadowMaterial({ opacity: 0.42 }));
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
@@ -101,6 +102,7 @@
       var pool = new THREE.Mesh(new THREE.PlaneGeometry(17, 12), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
       pool.rotation.x = -Math.PI / 2; pool.position.set(-0.5, 0.01, 0.5);
       scene.add(pool);
+      poolMat = pool.material;
     })();
 
     var redraws = []; // canvases that redraw once the web fonts arrive
@@ -446,7 +448,6 @@
     // ── a random blog note, typed after the prompt ───────────────────
     var entries = [], auto = [], autoNext = 0, lastEntry = -1, WRAP = MAXCOL - 1;
     try { entries = JSON.parse(document.getElementById("tw-entries").textContent); } catch (e) {}
-    var source = document.querySelector("[data-tw-source]");
     function clean(s) { // only what the machine has keys for
       s = String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"')
         .replace(/[\u2013\u2014]/g, "-").replace(/\u2026/g, "...").replace(/\s+/g, " ").trim();
@@ -488,11 +489,6 @@
       auto.push({ ch: "\n", d: 0.8 });       // and one after the title
       wrap(clean(opening(e.text))).forEach(type);
       autoNext = clock + 1.1;
-      if (source) {
-        var a = source.querySelector("a");
-        a.href = e.url; a.textContent = e.title;
-        source.hidden = false;
-      }
     }
 
     // ── simulation ───────────────────────────────────────────────────
@@ -507,6 +503,16 @@
       }
       process();
       var busy = queue.length > 0 || !!returning || auto.length > 0;
+      if (flick) { // the lamp stutters: the light on the machine and the pool on the desk dip together
+        busy = true;
+        var ft = clock - flick, lv = 1;
+        for (var fi = 1; fi < FLICK.length; fi++) {
+          if (ft <= FLICK[fi][0]) { var f0 = FLICK[fi - 1], f1 = FLICK[fi]; lv = f0[1] + (f1[1] - f0[1]) * (ft - f0[0]) / (f1[0] - f0[0]); break; }
+        }
+        if (ft > FLICK[FLICK.length - 1][0]) { flick = null; lv = 1; }
+        lamp.intensity = LAMP * (0.35 + 0.65 * lv);
+        poolMat.opacity = lv;
+      }
       allKeys.forEach(function (k) {
         if (k.target && clock >= k.releaseAt) k.target = 0;
         var stiff = k.target ? 900 : 380, damp = k.target ? 50 : 22;
@@ -568,6 +574,20 @@
       camera.updateProjectionMatrix();
       renderer.render(scene, camera);
     }
+    // ── the lamp flickers now and then (and the glow behind the machine with it: .tw.flicker in garden.css)
+    var FLICK = [[0, 1], [0.05, 0.45], [0.09, 0.95], [0.16, 0.3], [0.22, 1], [0.3, 0.7], [0.36, 1]], flick = null;
+    var still = matchMedia("(prefers-reduced-motion: reduce)");
+    (function nextFlicker() {
+      setTimeout(function () {
+        if (retro() && visible && !document.hidden && !still.matches) {
+          flick = clock;
+          stage.classList.remove("flicker"); void stage.offsetWidth; stage.classList.add("flicker");
+          wake();
+        }
+        nextFlicker();
+      }, 5000 + Math.random() * 11000);
+    })();
+
     var running = false, last = 0, visible = true;
     function frame(now) {
       if (!running) return;
