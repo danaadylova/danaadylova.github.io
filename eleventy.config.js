@@ -119,7 +119,7 @@ export default function (eleventyConfig) {
     if (!p) throw new Error(`frame: no photo "${o.photo}" in album "${album}" (run scripts/photos.mjs)`);
     const g = gridAt(o.at), src = `/img/photos/${album}/${o.photo}`;
     const taken = p.taken ? `${MONTHS[+p.taken.slice(5, 7) - 1]} ${p.taken.slice(0, 4)}` : "";
-    const medium = o.medium || (p.film ? "35 mm film" : [p.camera, taken].filter(Boolean).join(", "));
+    const medium = o.medium || (p.film ? "35\u00a0mm film" : [p.camera, taken].filter(Boolean).join(", "));
     const meta = [o.place, medium].filter(Boolean).join(" · ");
     return `<figure class="frame ${g.mods}${p.h > p.w ? " tall" : ""}" style="${g.style};--bg:${p.color}">` +
       `<img src="${src}-large.webp" srcset="${src}-small.webp ${p.small}w, ${src}-large.webp ${p.large}w" sizes="(min-width: 760px) ${Math.round((g.span / 12) * 72)}rem, 100vw" width="${p.w}" height="${p.h}" alt="${escHtml(o.alt || "")}" ${o.lead ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">` +
