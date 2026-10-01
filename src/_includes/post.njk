@@ -4,7 +4,7 @@ layout: base.njk
 {%- set older = collections.post | getPreviousCollectionItem %}
 {%- set newer = collections.post | getNextCollectionItem %}
 <article class="note">
-  <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% if topic %} · <span class="topic">{{ topic }}</span>{% endif %}</p>
+  <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% for t in (topics or topic) | topics %}{% if loop.first %} · {% endif %}<a class="topic" href="/blog/?tag={{ t | tagSlug }}">{{ t }}</a>{% endfor %}</p>
   <h1 data-typed>{{ title }}</h1>
   {{ content | safe }}
   {% if backlinks and backlinks.length %}

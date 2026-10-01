@@ -1,6 +1,6 @@
 # /blog: topic filters and writing posts from the site (PRD)
 
-Status: **proposal, not built.** v2, Oct 1 2026: Dana's answers folded in; scope now includes signing in and writing/editing posts from the site. Mockups in `docs/prd-blog-tags/` come from working prototypes of the real pages.
+Status: **Part A built on `feat/blog-tags` (not live); Part B proposed.** v3, Oct 1 2026: all of Dana's answers folded in, drafts added (B3). Mockups in `docs/prd-blog-tags/` come from working prototypes of the real pages.
 
 ## 1. Why
 
@@ -15,10 +15,10 @@ Under the "Notes, experiments…" line on /blog, a terminal line and a row of to
 
 ```
 ~/dana $ ls blog/ --topic *
-( all 5 ) ( books 2 ) ( knitting 1 ) ( photography 1 ) ( tech 2 ) ( this site 1 )
+( all 5 ) ( books 2 ) ( knitting 1 ) ( photography 1 ) ( tech 2 )
 ```
 
-- **The prompt line** reads like a command and follows the filter: `--topic *` for everything, `--topic books`, `--topic "this site"`.
+- **The prompt line** reads like a command and follows the filter: `--topic *` for everything, `--topic books`.
 - **Pills** use the existing topic pill style, with the post count in a muted color. The selected pill is filled terra. "all" first, then topics **A–Z** (approved).
 - **The list** keeps its year grouping; posts that don't match are hidden, and a year heading disappears when none of its posts match.
 - **Each post card** shows all of its topics as pills; clicking one filters by it.
@@ -28,7 +28,9 @@ Under the "Notes, experiments…" line on /blog, a terminal line and a row of to
 |---|---|---|
 | ![day](prd-blog-tags/day.jpg) | ![evening](prd-blog-tags/evening.jpg) | ![retro](prd-blog-tags/retro.jpg) |
 
-Unfiltered: ![all](prd-blog-tags/day-all.jpg) Phone: ![phone](prd-blog-tags/phone.jpg)
+Phone (tech): ![phone](prd-blog-tags/phone.jpg)
+
+(Screenshots of the built filter.)
 
 ### A2. Behavior
 
@@ -49,7 +51,7 @@ Unfiltered: ![all](prd-blog-tags/day-all.jpg) Phone: ![phone](prd-blog-tags/phon
 | Post | Topics |
 |---|---|
 | digital bookshelf and my reading journal | books, tech |
-| planting this garden | this site, tech |
+| planting this garden | tech (the "this site" topic is retired) |
 | dear california | photography |
 | know me in books | books |
 | on knitting your first (bad) sweater | knitting |
@@ -85,12 +87,33 @@ editor (danaadylova.com) → notes API on Railway (/site/posts, signed-in only) 
 - **New endpoints** on the existing API (`app/site_posts.py`, next to `site_comments.py`): `GET /site/posts` (list), `GET /site/posts/{slug}` (front matter + body + the file's version), `PUT /site/posts/{slug}` (create or update), all behind the same author session as /books.
 - **GitHub access**: a fine-grained token limited to **this repo, Contents: read & write**, stored on Railway as `GITHUB_TOKEN`. Never in the browser.
 - **No overwriting by accident**: each save sends the version it started from; if the file changed in the meantime (say, edited in the repo), the save stops and asks to reload.
-- **Drafts**: `draft: true` in front matter; drafts are left out of /blog, the feed and the home page, but listed for Dana when signed in.
+- **Drafts** never go to GitHub (the repo is public). They are kept privately by the API (B3) and become a file only when published.
 - **What it checks**: title required, date valid, topics are lowercase words, the slug (file name, from the title on first save) can't change after publishing, so links never break.
 - **Commit messages**: `post: <title> (from the site)`, so the history shows what was edited from the editor.
 - **Photo posts and shortcodes** (frame, favorite) are just text in the editor and keep working. Uploading new photos from the editor is **out of scope** (they still go through `scripts/photos.mjs`).
 
-### B3. Signing in: options
+### B3. Drafts
+
+**Where they live.** The site's repo is public, so a draft committed there could be read by anyone. Drafts are kept in the API's own database on Railway (a `blog_drafts` table: title, date, topics, body, which post it belongs to if any, last edited). **Publish** turns a draft into a commit; until then nothing about it is on GitHub or the site.
+
+**Two kinds of draft:**
+1. **A new post that isn't published yet.** "save as draft" in the editor.
+2. **Changes to a published post that aren't published yet.** "save as draft" while editing a live post: the live post stays as it is, the changes wait.
+
+**What Dana sees when signed in** (visitors see none of it; it's filled in by the page script after it asks the API, so it is never in the static HTML):
+- A **drafts** box at the top of /blog, under the topic pills, outlined with a dashed line and marked "only you can see these". Each draft is a normal post card with "draft" where the date goes, its topics, "edited 2 hours ago", and **edit · publish · delete draft**. Newest first. It follows the topic filter like any other card; with no drafts the box isn't shown.
+- A published post with waiting changes gets an **unpublished changes** badge next to its title (and its edit link opens the draft, not the live text).
+- **Preview**: the editor's preview tab shows the draft with the real post styles. Drafts have no public address.
+- **publish** asks once ("publish sweater vision? it'll be live in about a minute"), then commits; the card moves into the list after the next deploy, and the draft is removed.
+- **delete draft** asks once, then removes the draft only (a live post is never touched by it).
+
+| Day | Evening | Retro |
+|---|---|---|
+| ![drafts day](prd-blog-tags/drafts-day.jpg) | ![drafts evening](prd-blog-tags/drafts-evening.jpg) | ![drafts retro](prd-blog-tags/drafts-retro.jpg) |
+
+(The draft "sweater vision" and the badge on "know me in books" are sample data.)
+
+### B4. Signing in
 
 | Option | How it feels | What it needs | Notes |
 |---|---|---|---|
@@ -100,11 +123,9 @@ editor (danaadylova.com) → notes API on Railway (/site/posts, signed-in only) 
 | **4. Sign in with Google** | one click with your Gmail | a Google Cloud OAuth client | Familiar; more setup and Google console upkeep for one user. |
 | **5. No custom editor: a git-based CMS** (Decap CMS at `/admin`) | a ready-made editor that signs in with GitHub | an OAuth helper service; its own look | Less code to build, but it wouldn't look like the site and adds a dependency. |
 
-**Recommendation:** start with **1** (reuse /books sign-in, so it works on day one) and add **2, passkeys**, as the quick everyday sign-in. 3 is a good alternative to 2 if you'd rather click "Sign in with GitHub".
+**Decision: 1, the same email link as /books, and one sign-in for both.** The session cookie belongs to the API (not to a page), so signing in on /books also signs you in on /blog and the reverse; signing out of one signs out of both. The sign-in link gains a `next` so it lands back where you started (/books, /blog or the editor). A "sign in" link sits at the bottom of /blog like on /books. Passkeys or GitHub can be added later on top.
 
-The /books sign-in returns to /books; it gains a `next` so signing in on /blog lands back on /blog (or the editor).
-
-### B4. Security
+### B5. Security
 
 - Only `AUTHOR_EMAIL` can sign in (as today); every `/site/posts` call checks the author session (HttpOnly, SameSite cookie) and the request origin.
 - The GitHub token can only touch this one repo's files, and only lives on Railway.
@@ -116,14 +137,15 @@ The /books sign-in returns to /books; it gains a `next` so signing in on /blog l
 - Deleting posts from the editor (a draft hides a post; deleting stays a repo action).
 - Uploading photos from the editor.
 
-## Open questions
+## Decisions (Oct 1 2026)
 
-1. **"this site" topic**: it's the topic on *planting this garden* (the post about building this website). Keep it as its own topic, or call that post just **tech**?
-2. **Sign-in**: email link only, or email link + passkeys (recommended), or GitHub?
-3. **Publishing straight to `main`** from the editor is the point of the feature, but it is the one place that skips "Dana asks for merges". OK?
+1. **tech** tagging as in A3; **"this site" is retired**, that post is just tech.
+2. Topics **A–Z**; **"all"** by default; the **home page doesn't change**.
+3. **Sign-in: the /books email link, shared** between /books and /blog.
+4. **publish goes live directly.** Usually site changes wait for Dana's "merge"; with the editor, pressing **publish** is that approval, so the post goes live about a minute later with no extra step. "save as draft" never goes live.
 
 ## Build plan (after sign-off)
 
-1. Part A (topic filters): `blog.njk`, a `topics` filter in `eleventy.config.js`, `src/js/blog.js`, styles in `garden.css`, topic pills linked from posts, `topics:` on posts. Ships alone.
-2. Part B: `app/site_posts.py` + tests on the API; `GITHUB_TOKEN` on Railway (Dana creates the token); `/blog/edit/` page and `src/js/editor.js`; signed-in bits on /blog; drafts in the build. Then passkeys if chosen.
+1. Part A (topic filters): **built** on `feat/blog-tags` (`blog.njk`, `topics` / `mainTopic` / `topicCounts` filters, `src/js/blog.js`, styles in `garden.css`, topic pills on post pages link to `/blog/?tag=…`). Ships alone.
+2. Part B: `app/site_posts.py` + `blog_drafts` table + tests on the API; `GITHUB_TOKEN` on Railway (Dana creates the token); `next` on sign-in; `/blog/edit/` and `src/js/editor.js`; signed-in bits and drafts on /blog.
 3. CLAUDE.md in both repos.

@@ -462,3 +462,24 @@ html.js body.typed-done .ls-long { opacity: 1; }
   .fav-covers a, .fav-covers span { left: calc(var(--i) * (15rem - var(--w) - 14px) / max(var(--n) - 1, 1)); }
 }
 @media (prefers-reduced-motion: reduce) { .fav-covers a, .fav-covers span { transition: none; } }
+
+/* /blog topic filter (src/js/blog.js, docs/prd-blog-tags.md): a terminal line and topic pills; tokens only */
+.tag-filter { margin: 1.25rem 0 0.5rem; }
+.tf-prompt { font-family: var(--mono); font-size: 0.85rem; color: var(--ink); margin: 0 0 0.6rem; }
+.tf-prompt .d { color: var(--muted); }
+.tf-prompt .flag { color: var(--teal); }
+.tf-prompt .arg { color: var(--terra); }
+.tf-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.tf-tag { font-family: var(--mono); font-size: 0.78rem; color: var(--terra); background: var(--pill-bg); border: 1px solid transparent; border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; display: inline-flex; gap: 0.45rem; align-items: baseline; }
+.tf-tag .n { color: var(--muted); font-size: 0.7rem; }
+.tf-tag:hover, .tf-tag:focus-visible { border-color: var(--terra); outline: none; }
+.tf-tag[aria-pressed="true"] { background: var(--terra); color: var(--paper); }
+.tf-tag[aria-pressed="true"] .n { color: var(--paper); opacity: 0.8; }
+a.topic { text-decoration: none; border-bottom: none; }
+a.topic:hover, a.topic:focus-visible { outline: 1px solid var(--terra); }
+.post-meta a.topic { margin: 0 0.3rem 0 0; }
+.post-cards li[hidden], .year-head[hidden], .post-cards[hidden] { display: none; }
+@media (prefers-reduced-motion: no-preference) { .post-cards li.tf-in { animation: tf-in 0.15s ease both; } }
+@keyframes tf-in { from { opacity: 0; } }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.note-meta a.topic + a.topic { margin-left: 0.3rem; }
