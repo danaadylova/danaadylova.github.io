@@ -22,13 +22,6 @@ html.page-essay body { max-width: 74rem; }
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(to right, transparent, #000 6%, #000 92%, transparent), linear-gradient(to bottom, #000 80%, transparent);
   mask-composite: intersect; }
-.cam-line { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); text-align: center; margin: -1.6rem 0 0; position: relative; }
-.cam-line .p { opacity: 0.8; }
-.cam-line button {
-  font: inherit; color: var(--muted); background: none; border: none; border-bottom: 1px dashed var(--muted);
-  padding: 0; margin-left: 0.9rem; cursor: pointer;
-}
-.cam-line button:hover, .cam-line button:focus-visible { color: var(--terra); border-bottom-color: var(--terra); outline: none; }
 html:not(.js) .essay-cam { display: none; }
 
 @media (min-width: 760px) {

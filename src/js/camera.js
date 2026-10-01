@@ -1,10 +1,10 @@
 // The line-drawn 35 mm camera at the top of photo posts (three.js r128, loaded just before this file).
 // Every few seconds it focuses, stops down, fires, winds on and counts the frame; at 36 it rewinds.
-// Visitors can click the camera (the wind lever and rewind knob do their own thing) or the button.
+// Visitors can click the camera (the wind lever and rewind knob do their own thing).
 // It is drawn in lines: page-colored fills hide what's behind, outlines are screen-space quads, and the
 // table is only its shadows, hatched. Colors come from garden.css, so it follows retro and evening mode.
-// Markup: <div data-camera-box><div class="cam-stage" data-camera></div>
-//   <span data-camera-status></span> <button data-camera-shoot></button></div>
+// Markup: <div data-camera-box><div class="cam-stage" data-camera></div></div>; optional, anywhere on the page:
+//   <span data-camera-status></span> (shows "frame N of 36") and <button data-camera-shoot> (takes a picture).
 (() => {
   const stage = document.querySelector("[data-camera]");
   if (!stage) return;
