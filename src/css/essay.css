@@ -1,0 +1,80 @@
+/* Photo posts (layout photo-essay.njk): an editorial page after "01 / Editorial journal".
+   A big serif title with the line-drawn camera beside it, then photos on a 12-column grid with a side note,
+   a pull quote and numbered captions. Colors are garden.css tokens only, so retro and evening mode just work. */
+
+html.page-essay { background-image: none; }          /* plain paper, like a printed page */
+html.page-essay body { max-width: 74rem; }
+
+/* ── the head: title on the left, the camera on the right ── */
+.essay-head { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-bottom: 2.5rem; }
+.essay-title .note-meta { margin-bottom: 0; }
+.essay-page h1 {
+  font-size: clamp(2.8rem, 7vw, 5.4rem);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  margin: 0.6rem 0 0.9rem;
+}
+.essay-sub { font-family: var(--serif); font-style: italic; font-size: 1.25rem; line-height: 1.35; color: var(--body); margin: 0; }
+.cam-stage { width: 100%; aspect-ratio: 16 / 10; }
+.cam-stage canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  /* the hatched shadows fade out instead of stopping at the edge */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 92%, transparent), linear-gradient(to bottom, #000 80%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 92%, transparent), linear-gradient(to bottom, #000 80%, transparent);
+  mask-composite: intersect; }
+.cam-line { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); text-align: center; margin: -1.6rem 0 0; position: relative; }
+.cam-line .p { opacity: 0.8; }
+.cam-line button {
+  font: inherit; color: var(--muted); background: none; border: none; border-bottom: 1px dashed var(--muted);
+  padding: 0; margin-left: 0.9rem; cursor: pointer;
+}
+.cam-line button:hover, .cam-line button:focus-visible { color: var(--terra); border-bottom-color: var(--terra); outline: none; }
+html:not(.js) .essay-cam { display: none; }
+
+@media (min-width: 760px) {
+  .essay-head { grid-template-columns: 5fr 6fr; gap: 2rem; align-items: center; margin: 1rem 0 3rem; }
+}
+
+/* ── the grid ── */
+.essay { counter-reset: frame; display: grid; grid-template-columns: 1fr; row-gap: 2.75rem; }
+.essay > * { margin: 0; min-width: 0; }
+.essay > p { max-width: 36rem; }
+
+@media (min-width: 760px) {
+  .essay { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: clamp(1rem, 2.2vw, 2rem); row-gap: clamp(3rem, 6vw, 5rem); }
+  .essay > * { grid-column: var(--c, 3 / 11); align-self: start; }
+  .essay > .drop { margin-top: clamp(3rem, 9vw, 8rem); }
+  .essay > .end { align-self: end; }
+  .essay > .center { align-self: center; }
+}
+
+/* ── photos ── */
+.frame img { display: block; width: 100%; height: auto; background: var(--bg, var(--card)); }
+.frame figcaption { margin-top: 0.65rem; font-family: var(--mono); font-size: 0.72rem; line-height: 1.6; }
+.frame figcaption::before { counter-increment: frame; content: counter(frame, decimal-leading-zero) "."; color: var(--ink); margin-right: 0.6em; }
+.cap-title { color: var(--ink); }
+.cap-meta { color: var(--muted); }
+.cap-meta::before { content: " · "; white-space: pre; }
+.cap-note { display: block; font-family: var(--serif); font-size: 1rem; line-height: 1.45; color: var(--body); margin-top: 0.15rem; }
+@media (max-width: 759px) { .frame.tall { width: 86%; justify-self: center; } }
+
+/* a photo develops the first time it comes into view: from a pale, warm print to full color */
+@media (prefers-reduced-motion: no-preference) {
+  .js .frame img { opacity: 0.25; filter: sepia(0.55) saturate(0.4) brightness(1.12) contrast(0.85); transition: opacity 1.1s ease, filter 2.2s ease; }
+  .js .frame.seen img { opacity: 1; filter: none; }
+}
+
+/* ── words ── */
+.aside { font-family: var(--serif); font-size: 1.08rem; line-height: 1.5; color: var(--body); }
+.aside p { margin: 0 0 0.8rem; }
+.aside p:last-child { margin-bottom: 0; }
+.aside .where, .aside strong { display: block; font-family: var(--mono); font-weight: 400; font-size: 0.72rem; color: var(--muted); margin-top: 1rem; }
+.aside .where::before { content: ""; display: block; width: 2rem; border-top: 1px solid var(--muted); margin-bottom: 0.6rem; }
+.aside em { font-style: italic; }
+.pull { font-family: var(--serif); font-size: clamp(1.35rem, 2.3vw, 1.75rem); line-height: 1.3; color: var(--ink); border: none; padding: 0; }
+.pull p { margin: 0; }
+.pull::after { content: ""; display: block; width: 2.5rem; border-top: 1px solid var(--muted); margin-top: 1.1rem; }
+.sign-off { text-align: center; }
+.sign-off .aside-sig { font-family: var(--serif); font-style: italic; font-size: 1.3rem; color: var(--ink); }
+
+.essay-page .post-nav { margin-top: 5rem; }

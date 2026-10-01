@@ -95,6 +95,44 @@ export default function (eleventyConfig) {
     const text = favMd.render(content.trim()).replace(/^<p><strong>([\s\S]*?)<\/strong><\/p>/, '<p class="fav-title">$1</p>');
     return `<div class="favorite"><div class="fav-covers" style="--n:${found.length}">${covers}</div><div class="fav-text">${text}</div></div>`;
   });
+  // Photo posts (layout photo-essay.njk, front matter `album: <name>`, `templateEngineOverride: njk,md`):
+  //   {% frame { photo: "bench", at: "4-12", title: "…", note: "…", place: "…", alt: "…", lead: true } %}
+  //   {% aside "1-3 end" %}markdown{% endaside %}      {% pull "9-12" %}one line{% endpull %}
+  // `at` is a span of the 12-column grid ("first-last") plus optional words: "drop" starts it lower (the
+  // staggered look), "end" sits it at the bottom of its row, "center" in the middle; other words become classes. Below 760px everything
+  // is one column. Photos and their sizes, colors and EXIF come from src/_data/photos.json (made by
+  // scripts/photos.mjs); captions are numbered by CSS like frames on a roll. `lead` loads it first.
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const escHtml = (t) => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const gridAt = (at) => {
+    const m = /(\d+)-(\d+)/.exec(at || "1-12"), words = String(at || "").split(/\s+/);
+    return {
+      span: m ? m[2] - m[1] + 1 : 12,
+      style: m ? `--c:${m[1]} / ${+m[2] + 1}` : "",
+      mods: words.filter((w) => w && !/^\d+-\d+$/.test(w)).join(" "),   // drop, end, center, or any class
+    };
+  };
+  eleventyConfig.addShortcode("frame", function (o) {
+    const album = this.ctx?.album || this.ctx?.environments?.album;
+    const photos = this.ctx?.photos || this.ctx?.environments?.photos || {};
+    const p = (photos[album] || {})[o.photo];
+    if (!p) throw new Error(`frame: no photo "${o.photo}" in album "${album}" (run scripts/photos.mjs)`);
+    const g = gridAt(o.at), src = `/img/photos/${album}/${o.photo}`;
+    const taken = p.taken ? `${MONTHS[+p.taken.slice(5, 7) - 1]} ${p.taken.slice(0, 4)}` : "";
+    const medium = o.medium || (p.film ? "35 mm film" : [p.camera, taken].filter(Boolean).join(", "));
+    const meta = [o.place, medium].filter(Boolean).join(" · ");
+    return `<figure class="frame ${g.mods}${p.h > p.w ? " tall" : ""}" style="${g.style};--bg:${p.color}">` +
+      `<img src="${src}-large.webp" srcset="${src}-small.webp ${p.small}w, ${src}-large.webp ${p.large}w" sizes="(min-width: 760px) ${Math.round((g.span / 12) * 72)}rem, 100vw" width="${p.w}" height="${p.h}" alt="${escHtml(o.alt || "")}" ${o.lead ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">` +
+      `<figcaption><span class="cap-title">${escHtml(o.title || "")}</span>${meta ? `<span class="cap-meta">${escHtml(meta)}</span>` : ""}${o.note ? `<em class="cap-note">${escHtml(o.note)}</em>` : ""}</figcaption></figure>`;
+  });
+  eleventyConfig.addPairedShortcode("aside", function (content, at) {
+    const g = gridAt(at);
+    return `<div class="aside ${g.mods}" style="${g.style}">${favMd.render(content.trim()).trim()}</div>`;
+  });
+  eleventyConfig.addPairedShortcode("pull", function (content, at) {
+    const g = gridAt(at);
+    return `<blockquote class="pull ${g.mods}" style="${g.style}"><p>${favMd.renderInline(content.trim())}</p></blockquote>`;
+  });
   eleventyConfig.addFilter("commas", (n) => Number(n || 0).toLocaleString("en-US"));
   eleventyConfig.addFilter("fixed", (n, d = 1) => Number(n || 0).toFixed(d));
   eleventyConfig.addFilter("max", (arr) => Math.max(...arr));
