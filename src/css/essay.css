@@ -25,6 +25,10 @@ html.page-essay body { max-width: 74rem; }
   letter-spacing: -0.02em;
   margin: 0.6rem 0 0.9rem;
 }
+/* an invisible copy of the whole title keeps its width from the first letter typed, so the camera
+   beside it doesn't resize while the title types out */
+.essay-page h1[data-typed].typing::after { position: absolute; }   /* the typing cursor takes no room either */
+.essay-page h1::before { content: attr(data-full); display: block; height: 0; overflow: hidden; visibility: hidden; }
 .essay-sub { font-family: var(--serif); font-style: italic; font-size: 1.25rem; line-height: 1.35; color: var(--body); margin: 0; }
 .cam-stage { width: 100%; aspect-ratio: 16 / 10; }
 .cam-stage canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
