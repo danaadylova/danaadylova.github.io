@@ -228,15 +228,15 @@ html:not(.js) .kb { display: none; }
 @media print { .kb, .tw, .switches { display: none; } }
 
 @media screen {
-/* retro mode (garden.js; switches on the home page and in every footer): the whole site goes dark, on the
-   evening near-black with warm text accents; on the home page the typewriter replaces the keyboard.
+/* retro mode (garden.js; switches on the home page and in every footer): the whole site goes dark, on a
+   warm charcoal with warm text accents; on the home page the typewriter replaces the keyboard.
    Screen only, so the resume still prints light. */
 html.retro {
   color-scheme: dark;
-  --paper: #0e0d0c;
+  --paper: #1d1b19;
   --dot: transparent;
-  --card: #1c1813;
-  --card-border: #3a3129;
+  --card: #262320;
+  --card-border: #3e3934;
   --ink: #f0e6d4;
   --body: #d9cfbf;
   --muted: #a1937e;
@@ -251,10 +251,10 @@ html.retro {
   --wip-ink: #d8b46e;
   --wip-line: #6b5a2c;
 }
-/* the same near-black as evening mode, without the dot grid. Painted on body as well as html: a page host that
-   gives body its own background, like the Claude preview, would otherwise cover it and leave retro mode white. */
+/* warm charcoal, without the dot grid. Painted on body as well as html: a page host that gives body its own
+   background, like the Claude preview, would otherwise cover it and leave retro mode white. */
 html.retro, html.retro body {
-  background-color: #0e0d0c !important;
+  background-color: #1d1b19 !important;
   background-image: none !important;
 }
 html.retro .note-figure img { filter: brightness(.92); }
@@ -298,9 +298,9 @@ html.retro .note-figure img { filter: brightness(.92); }
 .tw canvas {
   display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   /* the lamp throws a long shadow back and to the right: fade it out before the edges instead of cutting it off */
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 92%, transparent), linear-gradient(to bottom, #000 86%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 82%, transparent), linear-gradient(to bottom, #000 82%, transparent);
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 5%, #000 92%, transparent), linear-gradient(to bottom, #000 86%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 82%, transparent), linear-gradient(to bottom, #000 82%, transparent);
   mask-composite: intersect;
 }
 html.retro .tw { display: block; }
