@@ -133,6 +133,17 @@ export default function (eleventyConfig) {
     const g = gridAt(at);
     return `<blockquote class="pull ${g.mods}" style="${g.style}"><p>${favMd.renderInline(content.trim())}</p></blockquote>`;
   });
+  // Post topics: `topics: [books, tech]` (a list) or the older single `topic: books`. The first is the main one.
+  const topicsOf = (data) => [].concat((typeof data === "string" || Array.isArray(data) ? data : data && (data.topics || data.topic)) || []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+  eleventyConfig.addFilter("topics", topicsOf);
+  eleventyConfig.addFilter("mainTopic", (data) => topicsOf(data)[0] || "");
+  eleventyConfig.addFilter("tagSlug", (t) => String(t).replace(/\s+/g, "-"));
+  // every topic with its number of posts, A–Z, for the filter row on /blog
+  eleventyConfig.addFilter("topicCounts", (posts) => {
+    const n = new Map();
+    for (const p of posts || []) for (const t of topicsOf(p.data)) n.set(t, (n.get(t) || 0) + 1);
+    return [...n].sort((a, b) => a[0].localeCompare(b[0])).map(([name, count]) => ({ name, count }));
+  });
   eleventyConfig.addFilter("commas", (n) => Number(n || 0).toLocaleString("en-US"));
   eleventyConfig.addFilter("fixed", (n, d = 1) => Number(n || 0).toFixed(d));
   eleventyConfig.addFilter("max", (arr) => Math.max(...arr));

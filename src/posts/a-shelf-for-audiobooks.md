@@ -1,7 +1,7 @@
 ---
 title: digital bookshelf and my reading journal
 date: 2026-09-28
-topic: books
+topics: [books, tech]
 ---
 Every fall I get incredibly excited about the new book releases, and this year I thought I’d create a digital library database to see which books I’ve read. Ever since I discovered audiobooks, my “Read” category in Goodreads shows very large numbers - but it was only feasible because I love to combine my knitting with audiobook listening, plus it was very beneficial for my mental health to go on walks and nurse my baby at nights while listening to some comfort reads.
 
