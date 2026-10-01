@@ -174,8 +174,7 @@
       cap.castShadow = cap.receiveShadow = true;
       outline(cap, "cap" + wu);
       board.add(sw, stem, cap);
-      var k = { label: label, kind: kind, cap: cap, mat: mat, restY: restY, press: 0, target: 0, v: 0, releaseAt: 0,
-        x: cx, row: r, pop: 0, pa: null, spin: (Math.random() - 0.5) * 1.6 };
+      var k = { label: label, kind: kind, cap: cap, mat: mat, restY: restY, press: 0, target: 0, v: 0, releaseAt: 0 };
       cap.userData.key = k;
       keys[label] = k; all.push(k); caps.push(cap);
       x += wu * U;
@@ -275,21 +274,6 @@
     press(keys[ch] ? ch : " ");
   }
 
-  function easeOutBack(u) { var c = 1.9; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); }
-  // every keycap pops off (to = 1) or drops back on (to = 0), in a wave across the board
-  function popAll(to, cb) {
-    var end = 0;
-    all.forEach(function (k) {
-      var f = (k.x + W / 2) / W;
-      var delay = to ? f * 0.35 + Math.random() * 0.06 : k.row * 0.07 + f * 0.25;
-      var dur = to ? 0.38 : 0.5;
-      k.pa = { to: to, start: clock + delay, dur: dur };
-      end = Math.max(end, delay + dur);
-    });
-    wake();
-    if (cb) setTimeout(cb, end * 1000 + 60);
-  }
-
   function step(dt) {
     clock += dt;
     var moving = false;
@@ -302,21 +286,10 @@
       k.press = Math.max(-0.08, Math.min(1.02, k.press + k.v * dt));
       if (k.target || Math.abs(k.press) > 0.0005 || Math.abs(k.v) > 0.005) moving = true;
       else { k.press = 0; k.v = 0; }
-      // retro mode swap: keycaps pop off (a small dip, then up and away) or drop back on with a bounce
-      var p = k.pop;
-      if (k.pa) {
-        moving = true;
-        var u = (clock - k.pa.start) / k.pa.dur;
-        if (u >= 1) { p = k.pa.to; k.pa = null; }
-        else if (u >= 0) p = k.pa.to ? u * u * (2.4 * u - 1.4) : 1 - easeOutBack(u);
-        k.pop = p;
-      }
-      var gone = Math.max(0, Math.min(1, p)), s = Math.max(0.001, 1 - gone);
-      k.cap.position.y = k.restY - k.press * TRAVEL + (p > 0 ? p * 1.8 : p * 0.4);
-      k.cap.rotation.z = gone * k.spin;
+      k.cap.position.y = k.restY - k.press * TRAVEL;
       if (glowOn) { k.mat.emissive.setHex(GLOW); k.mat.emissiveIntensity = Math.max(0, k.press) * 0.35; }
       var sq = Math.max(0, k.v) * 0.0009 * (k.target ? 1 : 0) + k.press * 0.05; // squash going down, a little stretch on the rebound
-      k.cap.scale.set((1 + sq * 0.5) * s, (1 - sq - (k.press < 0 ? k.press * 0.6 : 0)) * s, (1 + sq * 0.5) * s);
+      k.cap.scale.set(1 + sq * 0.5, 1 - sq - (k.press < 0 ? k.press * 0.6 : 0), 1 + sq * 0.5);
     }
     return moving;
   }
@@ -435,10 +408,6 @@
     },
     pressed: function () { return all.filter(function (k) { return k.press > 0.5; }).map(function (k) { return k.label; }); },
     reducedMotion: reduce.matches,
-    // retro mode swap (garden.js): pop the keycaps off, hide them, or drop them back on
-    exit: function (cb) { popAll(1, cb); },
-    prepare: function () { all.forEach(function (k) { k.pa = null; k.pop = 1; }); step(0); render(); },
-    enter: function (cb) { popAll(0, cb); },
     // for tests: advance the simulation by n frames without waiting for the browser
     step: function (n) { for (var i = 0; i < n; i++) step(1 / 60); render(); },
   };
