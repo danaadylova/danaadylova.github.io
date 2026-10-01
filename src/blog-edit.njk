@@ -1,0 +1,41 @@
+---
+layout: base.njk
+title: edit note
+permalink: /blog/edit/
+eleventyExcludeFromCollections: true
+---
+{#- The blog editor (docs/prd-blog-tags.md, part B; src/js/editor.js). An empty shell for visitors: everything
+    is loaded from the site API after it confirms Dana is signed in. ?post=<slug> edits a live post,
+    ?draft=<id> a draft, nothing starts a new post. -#}
+<div class="ed-page" data-editor data-api="{{ siteApi }}"
+     data-topics='{{ collections.post | topicCounts | dump | safe }}'>
+  <p class="blog-bar"><a class="new-post" href="/blog/">← all notes</a><span class="who" data-ed-who></span></p>
+  <h1 data-ed-heading>edit note</h1>
+  <p class="ed-gate" data-ed-gate>Loading…</p>
+
+  <form class="ed" data-ed-form hidden novalidate>
+    <p class="ed-note" data-ed-note hidden></p>
+    <div><label for="edTitle">title</label><input class="title" id="edTitle" type="text" maxlength="200" autocomplete="off" required></div>
+    <div class="row">
+      <div><label for="edDate">date</label><input id="edDate" type="date" required></div>
+      <div><span class="lab" id="edTopicsLabel">topics</span>
+        <div class="chips" role="group" aria-labelledby="edTopicsLabel" data-ed-chips></div></div>
+    </div>
+    <div>
+      <div class="tabs" role="tablist" aria-label="Write or preview">
+        <button type="button" role="tab" aria-selected="true" data-ed-tab="write">write</button>
+        <button type="button" role="tab" aria-selected="false" data-ed-tab="preview">preview</button>
+      </div>
+      <textarea id="edBody" aria-label="the post, in Markdown" spellcheck="true"></textarea>
+      <div class="ed-preview note" data-ed-preview hidden></div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary" data-ed-publish>publish</button>
+      <button type="button" class="btn" data-ed-draft>save as draft</button>
+      <button type="button" class="linkish" data-ed-discard hidden>discard draft</button>
+    </div>
+    <p class="status" aria-live="polite" data-ed-status></p>
+  </form>
+</div>
+<script src="/js/vendor/markdown-it.min.js" defer></script>
+<script src="/js/editor.js?v={{ build.v }}" defer></script>

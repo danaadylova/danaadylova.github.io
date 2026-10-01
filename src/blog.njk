@@ -6,6 +6,9 @@ eleventyExcludeFromCollections: true
 extraJs: /js/blog.js
 ---
 {%- set posts = collections.post | reverse %}
+{#- signed in as Dana (src/js/blog-author.js): this bar, the drafts box and the edit links are filled in after
+    the site API says so, so none of it is ever in the published HTML #}
+<p class="blog-bar" data-blog-bar data-api="{{ siteApi }}" hidden></p>
 <h1 data-typed>blog</h1>
 <p class="lede">Notes, experiments, and things I figured out along the way.</p>
 {#- topic filter (src/js/blog.js); hidden without JavaScript, when every post is simply listed #}
@@ -19,6 +22,10 @@ extraJs: /js/blog.js
   </div>
   <p class="visually-hidden" aria-live="polite" data-tf-live></p>
 </nav>
+<section class="blog-drafts" data-drafts aria-label="Your drafts" hidden>
+  <h2 class="drafts-head">drafts <span>· only you can see these</span></h2>
+  <ol class="post-cards draft-cards" data-draft-list></ol>
+</section>
 {%- set lastYear = 0 %}
 {% for post in posts %}
 {%- set y = post.date | year %}
@@ -26,7 +33,7 @@ extraJs: /js/blog.js
 <h2 class="year-head">{{ y }}</h2>
 <ol class="post-cards">{% set lastYear = y %}{% endif %}
   {%- set ts = post.data | topics %}
-  <li data-topics="{{ ts | join('|') }}">
+  <li data-topics="{{ ts | join('|') }}" data-slug="{{ post.page.fileSlug }}">
     <span class="date">{{ post.date | dayMonth }}</span>
     <div>
       <a class="post-title" href="{{ post.url }}">{{ post.data.title }}</a>
@@ -36,3 +43,5 @@ extraJs: /js/blog.js
   </li>
 {%- endfor %}
 </ol>
+<p class="blog-signin" data-blog-signin>{% if siteApi %}<button type="button" class="linkish" data-signin-open>sign in</button>{% endif %}</p>
+<script src="/js/blog-author.js?v={{ build.v }}" defer></script>

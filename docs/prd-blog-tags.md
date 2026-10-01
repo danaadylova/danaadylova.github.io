@@ -1,6 +1,6 @@
 # /blog: topic filters and writing posts from the site (PRD)
 
-Status: **Part A built on `feat/blog-tags` (not live); Part B proposed.** v3, Oct 1 2026: all of Dana's answers folded in, drafts added (B3). Mockups in `docs/prd-blog-tags/` come from working prototypes of the real pages.
+Status: **Parts A and B built on branches (not live):** site `feat/blog-tags`, API `feat/blog-editor`. v3, Oct 1 2026: all of Dana's answers folded in, drafts added (B3). Mockups in `docs/prd-blog-tags/` come from working prototypes of the real pages.
 
 ## 1. Why
 
@@ -147,5 +147,5 @@ editor (danaadylova.com) → notes API on Railway (/site/posts, signed-in only) 
 ## Build plan (after sign-off)
 
 1. Part A (topic filters): **built** on `feat/blog-tags` (`blog.njk`, `topics` / `mainTopic` / `topicCounts` filters, `src/js/blog.js`, styles in `garden.css`, topic pills on post pages link to `/blog/?tag=…`). Ships alone.
-2. Part B: `app/site_posts.py` + `blog_drafts` table + tests on the API; `GITHUB_TOKEN` on Railway (Dana creates the token); `next` on sign-in; `/blog/edit/` and `src/js/editor.js`; signed-in bits and drafts on /blog.
+2. Part B (**built**, tested end to end against a stand-in GitHub): `app/site_posts.py` + `blog_drafts` table + 13 tests on the API; `GITHUB_TOKEN` on Railway (Dana creates the token); `next` on sign-in; `/blog/edit/` and `src/js/editor.js`; signed-in bits and drafts on /blog.
 3. CLAUDE.md in both repos.
