@@ -1,5 +1,5 @@
 ---
-title: digital bookshelf and my reading journal
+title: digital bookshelf and reading journal
 date: 2026-09-28
 topics: [books, tech]
 ---
