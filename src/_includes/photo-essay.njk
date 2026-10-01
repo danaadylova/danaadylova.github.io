@@ -8,6 +8,7 @@ extraCss: /css/essay.css
 {%- set older = collections.post | getPreviousCollectionItem %}
 {%- set newer = collections.post | getNextCollectionItem %}
 <article class="note essay-page">
+  <div class="essay-paper">
   <header class="essay-head">
     <div class="essay-title">
       <p class="note-meta">{{ page.date | gdate }} · {{ content | readTime }} min read{% if topic %} · <span class="topic">{{ topic }}</span>{% endif %}</p>
@@ -20,6 +21,7 @@ extraCss: /css/essay.css
   </header>
   <div class="essay">
 {{ content | safe }}
+  </div>
   </div>
   <nav class="post-nav" aria-label="More notes">
     <div>{% if older %}<span class="dir">← older</span><a href="{{ older.url }}">{{ older.data.title }}</a>{% endif %}</div>
