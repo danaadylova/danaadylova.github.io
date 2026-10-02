@@ -14,6 +14,11 @@
   --teal-bright: #1d9e75;
   --olive: #6e6a33; /* the home page keyboard's case as it renders; 5.3:1 on paper */
   --highlight: #f7e9a0;
+  --kb-cap: #f3e4c5;
+  --kb-mod: #dfc28e;
+  --kb-accent: #b7a16b;
+  --kb-kase: #827447;
+  --kb-cable: #c9ad7c;
   --pill-bg: #faece7;
   --pill-ink: #712b13;
   --wip-ink: #8a6d12;
@@ -41,6 +46,12 @@
     --teal-bright: #93dcc1;
     --olive: #b5b26e; /* 8.8:1 on evening paper */
     --highlight: #4a3d17;
+    /* Original olive + butter palette, muted for evening rather than browned. */
+    --kb-cap: #9d8e5f;
+    --kb-mod: #84733f;
+    --kb-accent: #4c4b3a;
+    --kb-kase: #2e2d23;
+    --kb-cable: #84733f;
     --pill-bg: #2a1d16;
     --pill-ink: #e8a57e;
     --wip-ink: #d8b46e;

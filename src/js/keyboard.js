@@ -34,41 +34,33 @@
   var camera = new THREE.PerspectiveCamera(21, 2.2, 0.1, 200);
   var LOOK = new THREE.Vector3(0.8, 0.15, 0.1);
 
-  var hemi = new THREE.HemisphereLight(0xfff8ee, 0xbcae9a, 0.55);
-  var sun = new THREE.DirectionalLight(0xfff0dc, 1.6);
-  sun.position.set(-11, 12, 13);
+  var hemi = new THREE.HemisphereLight(0xffffff, 0xc8c5bb, 0.85);
+  var sun = new THREE.DirectionalLight(0xffffff, 1.05);
+  sun.position.set(-8, 16, 9);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -13, right: 13, top: 11, bottom: -11, near: 1, far: 60 });
   sun.shadow.radius = 9;
   sun.shadow.bias = -0.0004;
-  var fill = new THREE.DirectionalLight(0xffe9d2, 0.35);
+  sun.shadow.normalBias = 0.025;
+  var fill = new THREE.DirectionalLight(0xffffff, 0.45);
   fill.position.set(12, 6, -6);
   scene.add(hemi, sun, fill);
 
   function std(r) { return new THREE.MeshStandardMaterial({ roughness: r }); }
   var M = {
-    cap: std(0.7), mod: std(0.7), accent: std(0.7), kase: std(0.6), plate: std(0.75), sw: std(0.65),
+    cap: std(0.88), mod: std(0.88), accent: std(0.88), kase: std(0.92), plate: std(0.9), sw: std(0.65),
     stem: std(0.5), cable: std(0.6), yarn: std(0.9), yarnRing: std(0.9),
-    edge: new THREE.LineBasicMaterial({ transparent: true, opacity: 0.45 }),
-    caseEdge: new THREE.LineBasicMaterial({ transparent: true, opacity: 0.45 }),
   };
-  var edgeCache = {};
-  // hairline outlines, like a technical drawing: they keep the cream keys from merging into one surface
-  function outline(mesh, id, mat) {
-    var g = edgeCache[id] || (edgeCache[id] = new THREE.EdgesGeometry(mesh.geometry, 28));
-    mesh.add(new THREE.LineSegments(g, mat || M.edge));
-  }
   var ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: 0.17 }));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.02;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Olive + butter yellow (sRGB hex): cream letter keys, butter edge keys and cable, an olive case.
-  // Evening is the same colors, muted and darker; the warm glow underneath adds color back.
-  //   cap: letter keys · mod: edge keys · accent: enter and escape · kase: the case
-  var DAY = { cap: 0xf3ecd6, mod: 0xefd173, accent: 0x9e9a55, kase: 0x5f5e34, cable: 0xefd173 };
+  // Ivory, biscuit and warm olive: the same quiet palette as the site's notes.
+  // CSS owns the day/evening colors, just as it does for the rest of the garden.
+  var DAY = { cap: 0xf3e4c5, mod: 0xdfc28e, accent: 0xb7a16b, kase: 0x827447, cable: 0xc9ad7c };
   var tmp = new THREE.Color(), hsl = {};
   function shade(hex, l, s) { // scale lightness (and saturation) of an sRGB hex
     tmp.setHex(hex).getHSL(hsl);
@@ -80,18 +72,39 @@
     return /^#[0-9a-f]{6}$/i.test(v) ? parseInt(v.slice(1), 16) : 0xa9603a;
   }
   function palette(eve) {
-    var p = {};
-    for (var k in DAY) p[k] = eve ? shade(DAY[k], 0.55, 0.45) : DAY[k];
-    p.plate = shade(DAY.kase, eve ? 0.2 : 0.62, 0.8); // under the keys: the case color in shadow
-    p.sw = shade(DAY.kase, eve ? 0.28 : 0.45, 0.6);
-    p.stem = shade(DAY.mod, eve ? 0.6 : 0.95);
-    p.caseEdge = eve ? 0x0e0906 : shade(DAY.kase, 0.72);
+    var p = {}, css = getComputedStyle(document.documentElement);
+    for (var k in DAY) {
+      var token = css.getPropertyValue("--kb-" + k).trim();
+      p[k] = /^#[0-9a-f]{6}$/i.test(token) ? parseInt(token.slice(1), 16) : DAY[k];
+    }
+    p.plate = shade(p.kase, 0.65, 0.7);
+    p.sw = shade(p.kase, 0.55, 0.6);
+    p.stem = p.mod;
     p.yarn = terra();
     p.yarnRing = shade(p.yarn, 1.18, 0.9);
     return p;
   }
 
   // ── geometry helpers ───────────────────────────────────────────────
+  // ExtrudeGeometry duplicates vertices at triangle boundaries. Average normals
+  // at coincident positions so the bevels shade continuously instead of in stripes.
+  function smoothNormals(g) {
+    g.computeVertexNormals();
+    var p = g.attributes.position, n = g.attributes.normal, sums = new Map(), ids = [];
+    for (var i = 0; i < p.count; i++) {
+      var id = [p.getX(i), p.getY(i), p.getZ(i)].map(function (v) { return Math.round(v * 10000); }).join(",");
+      ids.push(id);
+      var sum = sums.get(id) || new THREE.Vector3();
+      sum.add(new THREE.Vector3(n.getX(i), n.getY(i), n.getZ(i)));
+      sums.set(id, sum);
+    }
+    sums.forEach(function (sum) { sum.normalize(); });
+    for (var j = 0; j < p.count; j++) {
+      var v = sums.get(ids[j]);
+      n.setXYZ(j, v.x, v.y, v.z);
+    }
+    return g;
+  }
   function roundedRect(w, d, r) {
     var s = new THREE.Shape(), x = -w / 2, y = -d / 2;
     s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
@@ -102,12 +115,12 @@
   }
   // an extruded rounded shape standing up along +y
   function slab(shape, h, bevel) {
-    var g = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 3, curveSegments: 8 });
+    var g = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 5, curveSegments: 12 });
     g.rotateX(-Math.PI / 2);
-    return g;
+    return smoothNormals(g);
   }
 
-  var U = 1, GAP = 0.1, CAP_H = 0.5, TAPER = 0.13;
+  var U = 1, GAP = 0.12, CAP_H = 0.4, TAPER = 0.075;
   var capCache = {};
   // tapered keycap: rounded base, narrower top, beveled edges (a simple OEM-ish profile)
   function capGeometry(wu) {
@@ -120,12 +133,12 @@
       p.setX(i, x - Math.sign(x) * Math.min(Math.abs(x), t * TAPER));
       p.setZ(i, z - Math.sign(z) * Math.min(Math.abs(z), t * TAPER * 1.1) - t * 0.03); // leans back a touch
     }
-    g.computeVertexNormals();
+    smoothNormals(g);
     return (capCache[wu] = g);
   }
 
   // ── layout: 60% ANSI ───────────────────────────────────────────────
-  // [width, label]: labels only name the keys, the caps are blank
+  // [width, label]: a compact keyboard with small, printed mono legends
   var ROWS = [
     [[1, "`"], [1, "1"], [1, "2"], [1, "3"], [1, "4"], [1, "5"], [1, "6"], [1, "7"], [1, "8"], [1, "9"], [1, "0"], [1, "-"], [1, "="], [2, "bksp"]],
     [[1.5, "tab"], [1, "q"], [1, "w"], [1, "e"], [1, "r"], [1, "t"], [1, "y"], [1, "u"], [1, "i"], [1, "o"], [1, "p"], [1, "["], [1, "]"], [1.5, "\\"]],
@@ -134,23 +147,41 @@
     [[1.25, "lctrl"], [1.25, "lwin"], [1.25, "lalt"], [6.25, " "], [1.25, "ralt"], [1.25, "fn"], [1.25, "menu"], [1.25, "rctrl"]],
   ];
   var MODS = { "`": 1, bksp: 1, tab: 1, "\\": 1, caps: 1, enter: 1, lshift: 1, rshift: 1, lctrl: 1, lwin: 1, lalt: 1, ralt: 1, fn: 1, menu: 1, rctrl: 1 };
-  var W = 15 * U, D = 5 * U, BORDER = 0.55, PLATE_Y = 0.62, SW_H = 0.34, STEM = 0.16;
+  var W = 15 * U, D = 5 * U, BORDER = 0.48, PLATE_Y = 0.87, SW_H = 0.16, STEM = 0.1;
 
   var board = new THREE.Group();
   board.rotation.x = 0.07; // typing angle: the front sits lower
   board.position.y = 0.2;
   scene.add(board);
 
-  // case: a tray with rounded corners, walls up to just under the keycaps
-  var outer = roundedRect(W + BORDER * 2, D + BORDER * 2, 0.75);
-  outer.holes.push(roundedRect(W + 0.06, D + 0.06, 0.3));
-  var walls = new THREE.Mesh(slab(outer, 0.9, 0.14), M.kase);
-  var bottom = new THREE.Mesh(slab(roundedRect(W + BORDER * 2, D + BORDER * 2, 0.75), 0.5, 0.14), M.kase);
-  var plate = new THREE.Mesh(new THREE.BoxGeometry(W + 0.05, 0.05, D + 0.05), M.plate);
+  // One continuous shell. The old bottom and walls occupied the same side faces,
+  // causing depth fighting (changing color along the case when it was redrawn).
+  var shell = new THREE.Mesh(slab(roundedRect(W + BORDER * 2, D + BORDER * 2, 0.6), 0.76, 0.1), M.kase);
+  var plate = new THREE.Mesh(slab(roundedRect(W + 0.05, D + 0.05, 0.22), 0.015, 0), M.plate);
   plate.position.y = PLATE_Y;
-  [walls, bottom, plate].forEach(function (m) { m.castShadow = m.receiveShadow = true; board.add(m); });
-  outline(walls, "walls", M.caseEdge);
-  outline(bottom, "bottom", M.caseEdge);
+  [shell, plate].forEach(function (m) { m.castShadow = m.receiveShadow = true; board.add(m); });
+
+  var legends = [], legendNames = { bksp: "delete", lshift: "shift", rshift: "shift", lctrl: "ctrl", rctrl: "ctrl", lwin: "cmd", lalt: "alt", ralt: "alt", menu: "…" };
+  function addLegend(cap, label) {
+    if (label === "`" || label === " ") return; // yarn artisan on escape; blank spacebar
+    var c = document.createElement("canvas");
+    c.width = 512; c.height = 128;
+    var ctx = c.getContext("2d");
+    var text = legendNames[label] || label;
+    ctx.font = "bold " + (text.length === 1 ? "72" : "48") + "px 'Courier New', monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(text, 256, 64);
+    var texture = new THREE.CanvasTexture(c);
+    texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    var material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false });
+    var legend = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 0.775), material);
+    legend.rotation.x = -Math.PI / 2;
+    legend.position.set(0, CAP_H - 0.064, -0.03);
+    legend.raycast = function () {}; // let the actual key surface handle clicks
+    cap.add(legend);
+    legends.push(material);
+  }
 
   var swGeo = new THREE.BoxGeometry(0.58, SW_H, 0.58);
   var stemGeo = new THREE.BoxGeometry(0.16, STEM + 0.1, 0.16);
@@ -172,7 +203,7 @@
       cap.position.set(cx, restY, z);
       cap.rotation.x = sculpt;
       cap.castShadow = cap.receiveShadow = true;
-      outline(cap, "cap" + wu);
+      addLegend(cap, label);
       board.add(sw, stem, cap);
       var k = { label: label, kind: kind, cap: cap, mat: mat, restY: restY, press: 0, target: 0, v: 0, releaseAt: 0 };
       cap.userData.key = k;
@@ -241,15 +272,20 @@
     glowOn = d;
     underLights.forEach(function (l) { l.intensity = d ? 3.2 : 0; });
     halo.visible = d;
-    M.plate.emissive.set(d ? GLOW : 0).convertSRGBToLinear(); M.plate.emissiveIntensity = d ? 0.55 : 0;
-    M.sw.emissive.set(d ? GLOW : 0).convertSRGBToLinear(); M.sw.emissiveIntensity = d ? 0.25 : 0;
-    sun.intensity = d ? 0.75 : 1.6;
-    fill.intensity = d ? 0.15 : 0.35;
-    hemi.intensity = d ? 0.32 : 0.55;
+    // Let the amber light catch the cap edges; keep the plate dimmer so it
+    // reads as light between individual keys, not a solid orange rectangle.
+    M.plate.emissive.set(d ? GLOW : 0).convertSRGBToLinear(); M.plate.emissiveIntensity = d ? 0.24 : 0;
+    M.sw.emissive.set(d ? GLOW : 0).convertSRGBToLinear(); M.sw.emissiveIntensity = d ? 0.4 : 0;
+    sun.color.setHex(d ? 0xfff0dc : 0xffffff);
+    fill.color.setHex(d ? 0xffe9d2 : 0xffffff);
+    hemi.color.setHex(d ? 0xfff8ee : 0xffffff);
+    hemi.groundColor.setHex(d ? 0xbcae9a : 0xc8c5bb);
+    sun.intensity = d ? 0.75 : 0.85;
+    fill.intensity = d ? 0.15 : 0.25;
+    hemi.intensity = d ? 0.32 : 0.65;
     renderer.toneMappingExposure = d ? 1.05 : 1.0;
-    ground.material.opacity = d ? 0.55 : 0.17;
-    M.edge.color.set(d ? 0x14110e : 0xb9a990).convertSRGBToLinear();
-    M.edge.opacity = d ? 0.6 : 0.45;
+    ground.material.opacity = d ? 0.3 : 0.10;
+    legends.forEach(function (m) { m.color.set(d ? 0xe6dfd0 : 0x49473e).convertSRGBToLinear(); });
   }
 
   // ── pressing keys ──────────────────────────────────────────────────
@@ -281,15 +317,15 @@
       var k = all[i];
       if (k.target && clock >= k.releaseAt) k.target = 0;
       // springy: fast down, a little bounce on the way up
-      var stiff = k.target ? 900 : 380, damp = k.target ? 50 : 22;
+      var stiff = k.target ? 900 : 380, damp = k.target ? 50 : 30;
       k.v += ((k.target - k.press) * stiff - k.v * damp) * dt;
       k.press = Math.max(-0.08, Math.min(1.02, k.press + k.v * dt));
+      if (reduce.matches) { k.press = k.target; k.v = 0; }
       if (k.target || Math.abs(k.press) > 0.0005 || Math.abs(k.v) > 0.005) moving = true;
       else { k.press = 0; k.v = 0; }
       k.cap.position.y = k.restY - k.press * TRAVEL;
       if (glowOn) { k.mat.emissive.setHex(GLOW); k.mat.emissiveIntensity = Math.max(0, k.press) * 0.35; }
-      var sq = Math.max(0, k.v) * 0.0009 * (k.target ? 1 : 0) + k.press * 0.05; // squash going down, a little stretch on the rebound
-      k.cap.scale.set(1 + sq * 0.5, 1 - sq - (k.press < 0 ? k.press * 0.6 : 0), 1 + sq * 0.5);
+      // Rigid caps travel like real keys; no rubbery squash or stretch.
     }
     return moving;
   }
@@ -389,7 +425,8 @@
   window.addEventListener("blur", function () { all.forEach(function (k) { if (k.target) release(k.label); }); });
 
   // the home page prompt, one character at a time (sent by garden.js)
-  document.addEventListener("garden:key", function (e) { if (!retro()) typeChar(e.detail.ch); });
+  document.addEventListener("garden:key", function (e) { if (!retro() && !reduce.matches) typeChar(e.detail.ch); });
+  document.addEventListener("garden:retro", function () { theme(); resize(); });
 
   // ── start ──────────────────────────────────────────────────────────
   new ResizeObserver(resize).observe(stage);
