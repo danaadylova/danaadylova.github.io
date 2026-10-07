@@ -85,3 +85,22 @@ test("cover: HTML error page or no candidates → generated-cover fallback color
   const r2 = await processCover({ id: "6", title: "Y", covers: [] }, { dir, fetchImpl: async () => assert.fail("no fetch"), log: quiet });
   assert.equal(r2.cover, null);
 });
+
+test("cover: a book with no cover yet is tried again on a later build, at most once a day", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "covers-"));
+  const png = await sharp({ create: { width: 600, height: 900, channels: 3, background: "#2e4a7a" } }).png().toBuffer();
+  const day1 = Date.UTC(2026, 9, 6, 13), book = { id: "53123770", title: "Wait and Hope", covers: [] };   // added before Goodreads had a cover
+  const r1 = await processCover(book, { dir, fetchImpl: async () => assert.fail("no fetch"), log: quiet, now: day1 });
+  assert.equal(r1.cover, null);
+
+  let calls = 0;
+  const withCover = { ...book, covers: ["https://x/53123770.jpg"] };
+  const later = await processCover(withCover, { dir, fetchImpl: async () => (calls++, res(200, png)), log: quiet, now: day1 + 3600e3 });
+  assert.equal(later.cover, null, "checked an hour ago: not again yet");
+  assert.equal(calls, 0);
+
+  const nextDay = await processCover(withCover, { dir, fetchImpl: async () => (calls++, res(200, png)), log: quiet, now: day1 + 24 * 3600e3 });
+  assert.equal(nextDay.cover, "/img/books/53123770");
+  assert.equal(calls, 1);
+  await fs.access(path.join(dir, "out", "53123770.webp"));
+});

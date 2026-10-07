@@ -610,6 +610,8 @@ All images are rendered from the interactive prototype with the real fonts. Book
 | 27 | Genres | **Not shown.** Goodreads RSS has none; Open Library matched ~53% of 2025 books with some wrong genres; tagging by hand was too much upkeep |
 | 28 | Heading font (revisits #16) | **IM Fell English** everywhere Instrument Serif was (Instrument Serif felt too AI-common). "currently reading" in one style; shelf headings (years 34px, currently reading 32px) smaller than the page title |
 | 29 | Retro mode (site-wide, Sep 30 2026) | A visitor-chosen **retro mode** (switch on the home page and in every footer) turns the whole site lamp-lit dark. On /books it uses the **same evening shelf palette** (charcoal, per #10's direction) under the retro backdrop, not a new brown one; the mug's steam follows it (`garden:retro` event). In retro the pointer-following shelf lamp is a bit brighter and flickers now and then, on a different rhythm per year |
+| 30 | Jumping to a year (Oct 7 2026) | The "jump to" links **glide** to the shelf (ease-in-out, 0.45–1.1 s by distance; scrolling yourself takes over) and that shelf's books **slide in from the right** one after another instead of dropping in; the year numeral gets a short terra underline. The URL gets `#y2024`. Reduced motion: an instant jump, no slide |
+| 31 | Covers for new books (Oct 7 2026) | A book with **no cover** (not on Goodreads yet when it was added, or a failed download) is **tried again on a later build, at most once a day**, instead of keeping its generated cover forever (`MISSING_RETRY_MS` in `lib/books/covers.js`). Seen with *Wait and Hope* |
 
 ## 14. Open questions
 
