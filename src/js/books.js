@@ -171,6 +171,7 @@
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
         io.unobserve(e.target);
+        if (glideActive) return;   // shelves passed during a "jump to" glide are simply there, not dropping in
         var items = e.target.querySelectorAll(".slot, .pile, .bookend"), step = Math.min(20, 400 / Math.max(1, items.length));
         items.forEach(function (s, i) {
           s.animate([
@@ -185,12 +186,13 @@
   }
 
   /* "jump to" a year: the page glides there, and that shelf's books slide in from the right, one after another */
-  var gliding = 0;
+  var gliding = 0, glideActive = false;
   function glideTo(target, done) {
     var y0 = window.scrollY, y1 = Math.max(0, Math.min(target, document.documentElement.scrollHeight - window.innerHeight));
     var dist = Math.abs(y1 - y0), ms = Math.min(1100, 450 + dist * 0.25), t0 = null, id = ++gliding;
     var ease = function (u) { return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; };
-    function stop() { gliding++; ["wheel", "touchstart", "keydown"].forEach(function (e) { window.removeEventListener(e, stop); }); }
+    glideActive = true;
+    function stop() { gliding++; glideActive = false; ["wheel", "touchstart", "keydown"].forEach(function (e) { window.removeEventListener(e, stop); }); }
     ["wheel", "touchstart", "keydown"].forEach(function (e) { window.addEventListener(e, stop, { passive: true, once: true }); });   // a visitor scrolling takes over
     (function frame(now) {
       if (id !== gliding) return;
