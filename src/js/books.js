@@ -73,7 +73,7 @@
     var avail = Math.max(220, shelvesEl.clientWidth - pad);
     var html = "";
     var mh = Math.round(176 * k), ms = mh / 176;
-    html += '<section class="year now" aria-labelledby="ynow"><div class="year-head"><h2 class="yr words" id="ynow">' +
+    html += '<section class="year now" aria-labelledby="ynow"><div class="year-head"><h2 class="yr words" id="ynow" tabindex="-1">' +
       'currently <em>reading</em></h2>' +
       '<span class="ym">' + (NOW.length ? NOW.length + (NOW.length > 1 ? " books" : " book") : "") + '</span></div><div class="room"><div class="shelf"><ul class="row">';
     if (!NOW.length) html += '<li class="empty" style="align-self:center">not reading anything right now</li>';
@@ -136,7 +136,7 @@
       // folded: highest-rated first (5★, then 4★, …), newest first within each rating. expanded: everything by read date.
       var byRating = open ? null : pack(upright.slice().sort(function (a, b) { return b.rating - a.rating; })).rows;
       var shown = open ? rows : byRating.slice(0, FOLD_ROWS);
-      html += '<section class="year" aria-labelledby="y' + y.year + '"><div class="year-head"><h2 class="yr" id="y' + y.year + '">' + y.year + '</h2>' +
+      html += '<section class="year" aria-labelledby="y' + y.year + '"><div class="year-head"><h2 class="yr" id="y' + y.year + '" tabindex="-1">' + y.year + '</h2>' +
         '<span class="ym">' + y.books.length + ' books' + (flat.length ? " · " + flat.length + " unfinished" : "") + '</span>' +
         (CARDS.indexOf(y.year) >= 0 ? '<a class="cardlink" href="/books/' + y.year + '/">reading card →</a>' : "") +
         (foldable ? '<span class="sortnote">' + (open ? "all books · by read date" : '<span class="st">★</span> top rated first') + '</span>' : "") +
@@ -164,9 +164,10 @@
     shelvesEl.querySelectorAll(".pile .spine.flat").forEach(function (el, i) { el.style.marginLeft = (i % 2 ? 7 : 0) + "px"; });
   }
 
+  var dropIO = null;
   function dropIn() {
     if (reduceMotion.matches) return;
-    var io = new IntersectionObserver(function (entries) {
+    var io = dropIO = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
         io.unobserve(e.target);
@@ -182,6 +183,57 @@
     }, { threshold: .15 });
     shelvesEl.querySelectorAll(".row").forEach(function (r) { io.observe(r); });
   }
+
+  /* "jump to" a year: the page glides there, and that shelf's books slide in from the right, one after another */
+  var gliding = 0;
+  function glideTo(target, done) {
+    var y0 = window.scrollY, y1 = Math.max(0, Math.min(target, document.documentElement.scrollHeight - window.innerHeight));
+    var dist = Math.abs(y1 - y0), ms = Math.min(1100, 450 + dist * 0.25), t0 = null, id = ++gliding;
+    var ease = function (u) { return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; };
+    function stop() { gliding++; ["wheel", "touchstart", "keydown"].forEach(function (e) { window.removeEventListener(e, stop); }); }
+    ["wheel", "touchstart", "keydown"].forEach(function (e) { window.addEventListener(e, stop, { passive: true, once: true }); });   // a visitor scrolling takes over
+    (function frame(now) {
+      if (id !== gliding) return;
+      if (t0 === null) t0 = now;
+      var u = Math.min(1, (now - t0) / ms);
+      window.scrollTo(0, y0 + (y1 - y0) * ease(u));
+      if (u < 1) requestAnimationFrame(frame); else { stop(); if (done) done(); }
+    })(performance.now());
+    return ms;
+  }
+  function slideShelf(sec, delay) {
+    sec.querySelectorAll(".row").forEach(function (r, ri) {
+      if (dropIO) dropIO.unobserve(r);   // it slides instead of dropping in
+      var items = r.querySelectorAll(".slot, .pile, .bookend"), step = Math.min(28, 520 / Math.max(1, items.length));
+      items.forEach(function (it, i) {
+        it.animate([
+          { transform: "translateX(120px)", opacity: 0 },
+          { transform: "translateX(-4px)", opacity: 1, offset: 0.78 },
+          { transform: "translateX(0)", opacity: 1 }
+        ], { duration: dur(520), delay: dur(delay + ri * 90 + i * step), easing: "cubic-bezier(.25,.7,.35,1)", fill: "backwards" });
+      });
+    });
+    var yr = sec.querySelector(".yr");
+    if (yr) {   // the underline sweeps in once the shelf is on screen
+      yr.classList.remove("arrived");
+      setTimeout(function () { yr.classList.add("arrived"); setTimeout(function () { yr.classList.remove("arrived"); }, 1600); }, dur(delay) + 200);
+    }
+  }
+  function jumpTo(id) {
+    var h = document.getElementById(id), sec = h && h.closest(".year");
+    if (!sec) return false;
+    var top = sec.getBoundingClientRect().top + window.scrollY - 24;
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    if (reduceMotion.matches) { window.scrollTo(0, top); h.focus({ preventScroll: true }); return true; }
+    var ms = glideTo(top, function () { h.focus({ preventScroll: true }); });
+    slideShelf(sec, Math.max(0, ms - 380));   // the books start arriving as the glide settles
+    return true;
+  }
+  document.getElementById("jump") && document.getElementById("jump").addEventListener("click", function (e) {
+    var a = e.target.closest('a[href^="#y"]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    if (jumpTo(a.getAttribute("href").slice(1))) e.preventDefault();
+  });
 
   var openId = null;
   renderShelves();

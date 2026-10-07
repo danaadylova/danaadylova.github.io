@@ -58,7 +58,7 @@ BOOKS_NOTES_API=http://localhost:8000/site npm run build   # point notes at a lo
   - Shelves: `read`, `currently-reading`, and for DNF both the shelf `did-not-finish` **and** the tag `dnf` (`?shelf=dnf` works for tags).
   - Books with no read date are **left out** (decision #3; 63 of 461 as of Sep 2026). DNF books use the date they were shelved.
   - Years are grouped in Pacific time.
-- **Covers:** downloaded once, resized to 400px WebP + JPEG under `.cache/books/covers/`, and passthrough-copied to `/img/books/<id>.{webp,jpg}`. Spine color = the cover's dominant color, clamped to the palette, with ink or paper text at ≥ 4.5:1 contrast.
+- **Covers:** downloaded once (a book still without a cover is retried at most daily, PRD #31), resized to 400px WebP + JPEG under `.cache/books/covers/`, and passthrough-copied to `/img/books/<id>.{webp,jpg}`. Spine color = the cover's dominant color, clamped to the palette, with ink or paper text at ≥ 4.5:1 contrast.
 - **Resilience:** live fetch → `.cache/books/snapshot.json` (kept between CI runs by `actions/cache`) → the build fails with "is the shelf public?". Nothing from Goodreads is committed.
 - **Freshness:** `deploy.yml` also runs daily at `17 13 * * *` UTC (~6am PT).
 - **UI** (`src/js/books.js`, ported from prototype v9; see PRD §6.0):
@@ -67,6 +67,7 @@ BOOKS_NOTES_API=http://localhost:8000/site npm run build   # point notes at a lo
   - DNF books lie flat in piles. 4★ gets a foil star, 5★ a star plus foil bands.
   - Filters all / loved / unfinished dim books without moving them.
   - Clicking a book pulls it out and turns it to its cover, then opens the reading panel.
+  - The "jump to" year links glide there and that shelf's books slide in from the right (`jumpTo` in books.js; PRD #30). Reduced motion: an instant jump.
   - Evening mode follows `prefers-color-scheme` (charcoal, not brown). Reduced-motion and no-JS fallbacks are included.
 - **Reading cards:** `/books/<year>/` for each finished year (`src/books-year.njk`, stats in `lib/books/yearstats.js`, styles `src/css/books-year.css`, PRD §6.8). `books.cards` / `books.cardYears` in the global data; the shelf adds a "reading card →" link via `DATA.cards`.
 - **Margin notes:** the panel talks to `lib/books/config.js` → `notesApi` (`https://unraveled.danaadylova.com/site`). Set it to `null` to show "coming soon".
