@@ -623,3 +623,12 @@ html:not(.js) .tools, html:not(.js) .jump { display: none; }
 .author-bar input { font: inherit; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
 .pin[disabled] { opacity: .6; cursor: progress; }
 @media (prefers-reduced-motion: reduce) { .skeleton i { animation: none; } }
+
+/* "jump to" a year (books.js jumpTo): the numeral gets a short terra underline that sweeps in and fades */
+.yr { position: relative; }
+.yr:focus { outline: none; }
+.yr:focus-visible { outline: 2px solid var(--terra-ink); outline-offset: 4px; }
+.yr.arrived::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--terra-ink);
+  transform-origin: left; animation: yr-arrive 1.5s cubic-bezier(.3,.7,.3,1) both; }
+@keyframes yr-arrive { 0% { transform: scaleX(0); opacity: 1; } 35% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .yr.arrived::after { animation: none; display: none; } }
