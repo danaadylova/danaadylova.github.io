@@ -11,4 +11,4 @@ Ravelry has tens of thousands of knitting patterns, but finding one that matches
 
 There's also a <mark>search by season</mark>: pick a season and see which patterns knitters were making then — a little trends archive of what was popular when.
 
-It grew out of [[gauge-matcher]], a scrappy little script that outgrew its terminal. The next step is [[sweater-vision]]: skip the search box entirely and just show it a photo.
+It grew out of [[gauge-matcher]], a scrappy little script that outgrew its terminal. And with [[sweater-vision]] you can skip the search box entirely: <mark>find by photo</mark> takes a picture of a knit and finds patterns like it.
