@@ -13,4 +13,4 @@ A few things you might notice:
 - If you type on your keyboard while you're here, the site thocks like a mechanical keyboard. This serves no purpose, I just like the sound. There's a `sound: off` switch in the footer if you don't.
 - It's built with [Eleventy](https://www.11ty.dev/), markdown files, and a GitHub Action. The whole thing is [on GitHub](https://github.com/danaadylova/danaadylova.github.io).
 
-Next up: more notes on [[sweater-vision]], and my personal knitting journey.
+Next up: more notes on [[sweater-vision]] (now live: [find a pattern from a photo](https://unraveled.danaadylova.com/#photo)), and my personal knitting journey.
