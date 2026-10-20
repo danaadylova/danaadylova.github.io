@@ -12,6 +12,18 @@
     "parent_id": null,
     "replies": [],
     "reply_to_name": null
+   },
+   {
+    "body": "Very creepy read, with a lot of gore and thought provoking imagery of food industry. Made me physically ill and consider reducing my intake of meat",
+    "book_id": "102615935",
+    "created_at": "2026-10-20T16:25:14.259050+00:00",
+    "edited_at": null,
+    "id": 16,
+    "is_author": true,
+    "name": "dana",
+    "parent_id": null,
+    "replies": [],
+    "reply_to_name": null
    }
   ],
   "210300489": [
@@ -179,6 +191,6 @@
    }
   ]
  },
- "count": 13,
- "exported_at": "2026-10-16T16:57:47.231363+00:00"
+ "count": 14,
+ "exported_at": "2026-10-20T17:31:52.330826+00:00"
 }
