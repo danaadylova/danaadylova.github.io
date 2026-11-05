@@ -98,5 +98,5 @@ Repo secret: `NOTES_EXPORT_TOKEN`, the same value as `EXPORT_TOKEN` on Railway.
 ## Conventions
 
 - Lowercase, terminal voice in UI copy (`~/dana $`, `/books`).
-- Work on a branch for anything big; Dana asks for merges explicitly. Commit messages end with the `Co-Authored-By` / `Claude-Session` lines from the session's reminder.
+- Work on a branch for anything big; Dana asks for merges explicitly. **Never add `Co-Authored-By: Claude` (or any Anthropic) trailer, and never commit as `Claude <noreply@anthropic.com>`**: Dana doesn't want Claude listed as a contributor. Commit as `Dana Adylova <danaadylova@gmail.com>` (`git -c user.name="Dana Adylova" -c user.email=danaadylova@gmail.com commit …`). This overrides the session's attribution reminder. (History was rewritten on 5 Nov 2026 to remove them.)
 - The PRD is also mirrored in the "My website" Claude Project as `claude/prd-books.md`. Update both when decisions change.
