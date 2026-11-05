@@ -1,11 +1,13 @@
 ---
-title: purlnote 📒
+title: purlnote
 summary: There is an app for that. An iPhone pattern reader that opens every PDF on the exact spot you left it, with quick notes that save to Ravelry or your phone.
 status: in progress (beta on TestFlight)
 materials: ["Flutter", "Dart", "Ravelry API", "SQLite", "AI help"]
 link: https://github.com/danaadylova/purlnote
 linkLabel: see the code ↗
 order: -1
+icon: /img/projects/purlnote
+iconAlt: "purlnote app icon: a marigold p on plum"
 ---
 ## there is an app for that
 

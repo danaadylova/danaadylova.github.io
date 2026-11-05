@@ -549,3 +549,18 @@ a.topic:hover, a.topic:focus-visible { outline: 1px solid var(--terra); }
 .ed .status .ok { color: var(--teal); }
 @media (max-width: 560px) { .ed .row { grid-template-columns: 1fr; } }
 .ed .actions .linkish { font-family: var(--mono); font-size: 0.78rem; }
+
+/* project app icon beside the title (front matter `icon`, e.g. purlnote) */
+.note-head { display: flex; align-items: center; gap: 1.1rem; margin: 0.25rem 0 1.25rem; }
+.note-head h1 { margin: 0; }
+.app-icon { flex: none; line-height: 0; }
+.app-icon img {
+  width: 76px; height: 76px;
+  border-radius: 22.5%;
+  box-shadow: 0 0 0 1px var(--card-border), 0 6px 14px -8px rgba(0, 0, 0, .45);
+  transform: rotate(-3deg);
+  transition: transform .25s ease;
+}
+.app-icon img:hover { transform: rotate(0deg) scale(1.04); }
+@media (prefers-reduced-motion: reduce) { .app-icon img, .app-icon img:hover { transform: none; transition: none; } }
+@media (max-width: 600px) { .note-head { gap: 0.85rem; } .app-icon img { width: 58px; height: 58px; } }
