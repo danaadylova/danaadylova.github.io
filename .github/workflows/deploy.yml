@@ -6,10 +6,11 @@ on:
   workflow_dispatch:
   schedule:
     # Daily rebuild so new Goodreads reads show up without a commit (13:17 UTC ≈ 6am Pacific).
+    # It also commits data/books/library.json when Goodreads changed (lib/books/library.js).
     - cron: "17 13 * * *"
 
 permissions:
-  contents: read
+  contents: write # commit data/books/library.json
   pages: write
   id-token: write
 
@@ -20,8 +21,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      books_ok: ${{ steps.books.outputs.ok }}
+      books_error: ${{ steps.books.outputs.error }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20 # enough to rebase the library commit onto a push that landed meanwhile
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -35,6 +41,21 @@ jobs:
           key: books-${{ github.run_id }}
           restore-keys: books-
       - run: npm run build
+      - name: Save the books library
+        id: books
+        run: |
+          node -e 'const s=require("./.cache/books/status.json"); require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `ok=${s.ok}\nerror=${(s.error||"").replace(/\n/g," ")}\n`)'
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then echo "not main: library changes are not committed"; exit 0; fi
+          if git diff --quiet -- data/books/library.json; then echo "no book changes"; exit 0; fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add data/books/library.json
+          git commit -m "books: update from Goodreads ($(TZ=America/Los_Angeles date +%F))"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          echo "::warning title=Books::couldn't commit data/books/library.json; the site shows the changes, and the next build will try again"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -49,3 +70,13 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # The site deployed either way; this makes a stale /books visible (a failed scheduled run emails Dana).
+  books-freshness:
+    needs: [build, deploy]
+    if: needs.build.outputs.books_ok != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error title=/books not updated::Goodreads' shelf widget couldn't be read, so /books shows the last saved library. ${{ needs.build.outputs.books_error }}"
+          exit 1

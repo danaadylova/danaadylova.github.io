@@ -40,7 +40,8 @@
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); }
   function lastName(a) { var p = a.split(" "); return p[p.length - 1]; }
   function approvedCount(b) { return b.noteCount || 0; }
-  function stars(r) { return "★★★★★".slice(0, r) + "☆☆☆☆☆".slice(0, 5 - r); }
+  // Goodreads allows half stars (2026): 3.5 → ★★★½☆
+  function stars(r) { var f = Math.floor(r), h = r - f >= 0.5 ? 1 : 0; return "★★★★★".slice(0, f) + (h ? "½" : "") + "☆☆☆☆☆".slice(0, 5 - f - h); }
   function scaleFactor() { return window.innerWidth < 480 ? .86 : 1; }
   function yarnBall(name) {
     var c = PALETTE[hash(name) % PALETTE.length], d = textFor(c) === "#2b211a" ? "rgba(43,33,26,.42)" : "rgba(251,250,244,.5)";
@@ -57,7 +58,7 @@
   }
   function spineBtn(b, k, flat) {
     var fav = !flat && b.rating >= 4, cnt = approvedCount(b);
-    var cls = "spine sf-" + b.font + (flat ? " flat" : "") + (b.rating === 5 ? " fav5" : b.rating === 4 ? " fav4" : "") + (openId === b.id ? " out" : "");
+    var cls = "spine sf-" + b.font + (flat ? " flat" : "") + (b.rating === 5 ? " fav5" : b.rating >= 4 ? " fav4" : "") + (openId === b.id ? " out" : "");
     var style = "--w:" + Math.round(b.w * k) + "px;--h:" + Math.round(b.h * k) + "px;--c:" + b.color + ";--t:" + b.text;
     return '<button class="' + cls + '" type="button" data-id="' + b.id + '" aria-label="' + esc(labelFor(b)) + '" style="' + style + '">' + spineInner(b) +
       (fav ? '<span class="foil-star" aria-hidden="true"></span>' : "") +

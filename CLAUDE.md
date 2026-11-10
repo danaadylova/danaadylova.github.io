@@ -16,11 +16,12 @@ See its `CLAUDE.md`.
 | `src/js/keyboard.js`, `src/js/typewriter.js` | The home page's 3D keyboard and, in retro mode, the typewriter (three.js r128 in `src/js/vendor/`) |
 | `src/books.njk`, `src/css/books.css`, `src/js/books.js` | **/books** bookshelf page (see below) |
 | `src/books-ids.njk` | `/books/ids.json`: `{goodreadsId: "Title — Author"}`, read by the notes API to validate book ids |
-| `src/_data/books.js` | Global data `books`: Goodreads → shelves, covers, spine colors; also builds the compact JSON the page script reads |
-| `lib/books/` | Pipeline code: `goodreads.js` (RSS parse/normalize/merge), `fetch.js` (paginated fetch), `covers.js` + `color.js` (download/resize covers, cover-derived spine colors with AA contrast), `reviews.js` (Markdown reviews), `config.js` (**settings: Goodreads user id, shelves, fold rows, notes API URL**) |
+| `src/_data/books.js` | Global data `books`: committed library + Goodreads widget → shelves, covers, spine colors; also builds the compact JSON the page script reads |
+| `data/books/library.json` | **The /books library, committed** (one book per line). Updated by every build from the Goodreads widget and committed by `deploy.yml`. `goodreads-archive-2026-10-27.json` beside it is the last RSS copy, kept as a record |
+| `lib/books/` | Pipeline code: `widget.js` (fetch + parse Goodreads' shelf widget), `library.js` (merge the widget into library.json: first-seen dates, re-reads, DNF, removals), `goodreads.js` (year grouping, spine geometry; RSS parsing only for the offline fixtures), `covers.js` + `color.js` (download/resize covers, cover-derived spine colors with AA contrast), `reviews.js` (Markdown reviews), `config.js` (**settings: Goodreads user id, shelves, fold rows, notes API URL**) |
 | `src/reviews/*.md` | Dana's own reviews (front matter `book_id`). Not output as pages (`reviews.json` → `permalink: false`) |
 | `notes/notes.json` | Nightly backup of all approved margin notes (written by `notes-export.yml`); also rendered into the page as a fallback |
-| `test/` | `node --test` suites (`npm test`, 21 tests). Fixtures mimic Goodreads RSS exactly |
+| `test/` | `node --test` suites (`npm test`, 34 tests). `fixtures/widget.js` mimics the widget's markup exactly; the RSS fixtures feed `serve:offline` |
 | `docs/prd-books.md` | **The /books PRD**: design, decisions log, mockups (`docs/prd-books/*.jpg`), rejected directions, implementation status. Read it before changing /books |
 | `scripts/books-report.mjs` | Summarizes a build's Goodreads data (used by CI) |
 
@@ -46,21 +47,24 @@ See its `CLAUDE.md`.
 
 ```bash
 npm ci
-npm test                 # 21 tests
-npm run serve            # http://localhost:8080 (fetches Goodreads live)
+npm test                 # 34 tests
+npm run serve            # http://localhost:8080 (reads the Goodreads widget live; may update data/books/library.json)
+BOOKS_WIDGET_DIR=dir npm run build   # use saved widget responses dir/<shelf>.js instead of Goodreads
 npm run serve:offline    # BOOKS_FIXTURE=1: sample books, no network needed
 BOOKS_NOTES_API=http://localhost:8000/site npm run build   # point notes at a local API
 ```
 
 ## /books: how it works
 
-- **Data:** Goodreads has no API (retired 2020), so the site uses per-shelf **RSS** at build time: `https://www.goodreads.com/review/list_rss/135558742?shelf=<shelf>&page=N`.
-  - Shelves: `read`, `currently-reading`, and for DNF both the shelf `did-not-finish` **and** the tag `dnf` (`?shelf=dnf` works for tags).
-  - Books with no read date are **left out** (decision #3; 63 of 461 as of Sep 2026). DNF books use the date they were shelved.
+- **Data (since Nov 10 2026):** Goodreads has no API (retired 2020) and **retired shelf RSS on Oct 28 2026** (every `list_rss` URL 404s). The build now merges Goodreads' public **shelf widget** into the committed **`data/books/library.json`** (`lib/books/library.js`, PRD decision #32):
+  - Widget: `https://www.goodreads.com/review/custom_widget/135558742?shelf=<shelf>&sort=date_read&order=d&num_books=100&widget_id=<fresh>`. Newest 100 books per shelf; book id comes from the cover file name; Dana's rating (half stars possible); **no dates, no page counts**. Needs a fresh `widget_id` each time (Goodreads caches per id).
+  - Shelves: `read`, `currently-reading`, and for DNF both the shelf `did-not-finish` **and** the tag `dnf`.
+  - A newly read book is dated the Pacific day a build first sees it (`dateSource: "first-seen"`); **fix a date by editing `readAt` in library.json**, later builds keep it. Re-reads, moves to DNF and books taken off the read shelf come from the widget's order; more than 5 removals at once is treated as a bad response.
+  - Books with no read date are **left out** (decision #3; 64 as of Oct 2026). DNF books use the date they were shelved.
   - Years are grouped in Pacific time.
 - **Covers:** downloaded once (a book still without a cover is retried at most daily, PRD #31), resized to 400px WebP + JPEG under `.cache/books/covers/`, and passthrough-copied to `/img/books/<id>.{webp,jpg}`. Spine color = the cover's dominant color, clamped to the palette, with ink or paper text at ≥ 4.5:1 contrast.
-- **Resilience:** live fetch → `.cache/books/snapshot.json` (kept between CI runs by `actions/cache`) → the build fails with "is the shelf public?". Nothing from Goodreads is committed.
-- **Freshness:** `deploy.yml` also runs daily at `17 13 * * *` UTC (~6am PT).
+- **Resilience:** widget fails → the committed library is shown as is, the build log says so, and `deploy.yml`'s `books-freshness` job fails **after** deploying (a failed scheduled run emails Dana). `.cache/books/status.json` holds each build's result.
+- **Freshness:** `deploy.yml` also runs daily at `17 13 * * *` UTC (~6am PT) and commits `data/books/library.json` as `github-actions` when Goodreads changed.
 - **UI** (`src/js/books.js`, ported from prototype v9; see PRD §6.0):
   - A "currently reading" shelf (face-out covers + stoneware mug with canvas steam).
   - Year shelves using IM Fell English numerals (old-style figures), smaller than the page title. Years with more than 3 shelves **fold to 2 shelves sorted by rating then date**; "show all" expands to read-date order with FLIP animation.
@@ -78,8 +82,8 @@ BOOKS_NOTES_API=http://localhost:8000/site npm run build   # point notes at a lo
 
 | Workflow | When | What |
 |---|---|---|
-| `deploy.yml` | push to `main`, daily, manual | test → build (Goodreads + covers, cached) → GitHub Pages |
-| `books-data-check.yml` | push to `feat/books-*` | Builds with real data **without deploying**, writes counts as annotations, and publishes snapshot + covers to the throwaway branch `books-preview-data` (never merge it) |
+| `deploy.yml` | push to `main`, daily, manual | test → build (library + Goodreads widget + covers) → commit `data/books/library.json` if changed → GitHub Pages; `books-freshness` fails if the widget couldn't be read |
+| `books-data-check.yml` | push to `feat/books-*` | Builds with real data **without deploying or committing**, writes counts and changes as annotations, and publishes snapshot, status, merged `library.json` + covers to the throwaway branch `books-preview-data` (never merge it) |
 | `notes-export.yml` | daily ~5:40am PT | `GET /site/books/comments/export` with secret `NOTES_EXPORT_TOKEN` → commits `notes/notes.json` if changed |
 | `notes-api-check.yml` | daily ~9:20am PT, manual, push to `diag/**` | Probes the notes API like a browser (health, CORS, validation POST that saves nothing). **Fails and emails Dana** if settings are missing or the last email failed |
 
@@ -88,7 +92,7 @@ Repo secret: `NOTES_EXPORT_TOKEN`, the same value as `EXPORT_TOKEN` on Railway.
 ## Working from a Claude cloud session: gotchas
 
 - The sandbox **cannot reach goodreads.com, danaadylova.com or unraveled.danaadylova.com** (egress allowlist), and neither can the linked Mac's shell. Workarounds used so far:
-  - **Real Goodreads data locally:** push to a `feat/books-*` branch, then `git clone -b books-preview-data …` and copy `snapshot.json` + `covers/{out,meta}` into `.cache/books/`. The build then falls back to that cache.
+  - **Real Goodreads data locally:** `data/books/library.json` is in the repo; for the widget, ask Dana to save the widget URL's response as `<shelf>.js` and build with `BOOKS_WIDGET_DIR`, or push to a `feat/books-*` branch and read `books-preview-data` (merged `library.json`, `status.json`, covers in `covers/{out,meta}` → copy into `.cache/books/covers/`).
   - **Probing the live API:** push to a `diag/<anything>` branch (runs `notes-api-check.yml`) and read the results publicly via `GET https://api.github.com/repos/danaadylova/danaadylova.github.io/check-runs/<job id>/annotations` (the runs/jobs APIs are public; logs and artifacts need auth).
 - The git proxy can't delete remote branches, and `gh` isn't available.
 - Google Fonts are blocked in the sandbox. For screenshots, install `@fontsource/*` packages and inject `@font-face` served over the local http server.

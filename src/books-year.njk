@@ -17,7 +17,7 @@ eleventyComputed:
 {%- if b.cover -%}<picture><source srcset="{{ b.cover }}.webp" type="image/webp"><img class="{{ cls }}" src="{{ b.cover }}.jpg" alt="Cover of {{ b.title }}" loading="lazy"></picture>
 {%- else -%}<span class="{{ cls }} nocover" aria-hidden="true"></span>{%- endif -%}
 {%- endmacro -%}
-{%- macro stars(r) -%}<span class="st" aria-label="rated {{ r }} of 5">{% for i in range(0, 5) %}{% if i < r %}★{% else %}<span class="off">★</span>{% endif %}{% endfor %}</span>{%- endmacro -%}
+{%- macro stars(r) -%}<span class="st" aria-label="rated {{ r }} of 5">{% for i in range(0, 5) %}{% if i + 1 <= r %}★{% elif i + 0.5 <= r %}½{% else %}<span class="off">★</span>{% endif %}{% endfor %}</span>{%- endmacro -%}
 {%- macro author(a, both) -%}
 <li>
   <span class="aname">{{ a.name }}</span>{% if both and a.name in both %}<span class="both">in both</span>{% endif %}
@@ -35,7 +35,7 @@ eleventyComputed:
     <div class="row"><dt>books finished</dt><dd>{{ card.count }}</dd></div>
     <div class="row"><dt>pages read</dt><dd>{{ card.pages | commas }} <small>≈ {{ card.pagesPerDay }} a day</small></dd></div>
     <div class="row"><dt>average rating</dt><dd>{{ card.avgRating | fixed }}★</dd></div>
-    <div class="row"><dt>loved</dt><dd>{{ card.fiveStar }} at 5★ · {{ card.fourStar }} at 4★</dd></div>
+    <div class="row"><dt>loved</dt><dd>{{ card.fiveStar }} at 5★ · {{ card.fourStar }} at 4★ or 4½★</dd></div>
     {% if card.busiestMonth %}<div class="row"><dt>biggest month</dt><dd>{{ card.busiestMonth.name }} <small>{{ card.busiestMonth.pages | commas }} pages</small></dd></div>{% endif %}
   </dl>
 </div>

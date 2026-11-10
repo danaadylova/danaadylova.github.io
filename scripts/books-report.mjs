@@ -5,6 +5,7 @@ import path from "node:path";
 import config from "../lib/books/config.js";
 
 const snap = JSON.parse(await fs.readFile(path.join(config.cacheDir, "snapshot.json"), "utf8"));
+const status = JSON.parse(await fs.readFile(path.join(config.cacheDir, "status.json"), "utf8").catch(() => "{}"));
 const metaDir = path.join(config.cacheDir, "covers", "meta");
 const metas = await fs.readdir(metaDir).catch(() => []);
 let withCover = 0;
@@ -17,7 +18,10 @@ const sample = snap.years.flatMap((y) => y.books).slice(0, 5)
   .map((b) => `${b.title} — ${b.author} · ${b.dnf ? "dnf" : "★".repeat(b.rating) || "unrated"} · ${String(b.when).slice(0, 10)}`);
 
 const notices = [
-  ["Feeds", `read=${fc.read} · currently-reading=${fc.reading} · ${dnfFeeds} · snapshot taken ${snap.fetchedAt} (${Math.round((Date.now() - Date.parse(snap.fetchedAt)) / 60000)} min ago; old = Goodreads failed and the cache was used)`],
+  ["Goodreads widget", status.ok
+    ? `read=${fc.read} (newest 100 max) · currently-reading=${fc.reading} · ${dnfFeeds} · checked ${status.checkedAt}`
+    : `FAILED: ${status.error}; showing the committed library as of ${status.checkedAt}`],
+  ["Changes", [...(status.changes || []), ...(status.warnings || []).map((w) => `⚠ ${w}`)].join(" | ") || "none"],
   ["Library", `${snap.total} books in ${snap.years.length} years · ${snap.lovedTotal} loved · ${snap.dnfTotal} unfinished · ${snap.reading.length} currently reading`],
   ["Per year", years],
   ["Covers", `${withCover} of ${metas.length} books have a cover image`],
