@@ -36,7 +36,7 @@ extraFonts: https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swa
     {%- if b.cover %}<img src="{{ b.cover }}.jpg" alt="{{ b.title }}" width="{{ b.coverWidth }}" height="{{ b.coverHeight }}" loading="lazy" decoding="async">
     {%- else %}<span style="display:block;aspect-ratio:2/3;background:{{ b.color }};color:{{ b.textColor }};padding:.4rem">{{ b.title }}</span>{% endif -%}
   </a>
-  {{ b.title }}<br><span class="bk-m">{{ b.author }} · {% if b.reading %}reading{% elif b.dnf %}dnf{% elif b.rating %}{% for i in range(0, b.rating) %}★{% endfor %}{% endif %}</span>
+  {{ b.title }}<br><span class="bk-m">{{ b.author }} · {% if b.reading %}reading{% elif b.dnf %}dnf{% elif b.rating %}{% for i in range(0, 5) %}{% if i + 1 <= b.rating %}★{% elif i + 0.5 <= b.rating %}½{% endif %}{% endfor %}{% endif %}</span>
 </li>
 {%- endmacro %}
 <div class="books-fallback">

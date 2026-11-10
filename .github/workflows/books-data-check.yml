@@ -26,7 +26,7 @@ jobs:
           path: .cache/books
           key: books-${{ github.run_id }}
           restore-keys: books-
-      - name: Build (fetches Goodreads, downloads covers)
+      - name: Build (reads the Goodreads widget, downloads covers; never commits)
         run: npm run build
       - name: Report
         run: node scripts/books-report.mjs
@@ -43,6 +43,7 @@ jobs:
         run: |
           mkdir -p /tmp/pub/covers
           cp .cache/books/snapshot.json /tmp/pub/
+          cp .cache/books/status.json data/books/library.json /tmp/pub/
           cp -r .cache/books/covers/out .cache/books/covers/meta /tmp/pub/covers/
           cd /tmp/pub
           git init -q -b books-preview-data

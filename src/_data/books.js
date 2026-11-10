@@ -1,13 +1,18 @@
-// Global data `books` for the /books page, built from Goodreads at build time.
+// Global data `books` for the /books page, built at build time.
 //
-//   live Goodreads RSS  →  .cache/books/snapshot.json (last good copy)  →  build fails loudly
+//   data/books/library.json (committed)  +  Goodreads' public shelf widget  →  updated library.json  →  page
+//
+// Goodreads retired shelf RSS on 2026-10-28; see lib/books/library.js for how the widget's gaps
+// (no dates, no page counts, newest 100 only) are handled. If the widget fails, the committed library is
+// used as is and the build says so loudly (and CI fails the run after deploying, which emails Dana).
 //
 // Local development without network: BOOKS_FIXTURE=1 npm run serve  (uses test fixtures).
 import fs from "node:fs/promises";
 import path from "node:path";
 import config from "../../lib/books/config.js";
-import { fetchShelf } from "../../lib/books/fetch.js";
-import { buildLibrary, spineGeometry } from "../../lib/books/goodreads.js";
+import { buildLibrary, groupLibrary, spineGeometry } from "../../lib/books/goodreads.js";
+import { fetchWidget } from "../../lib/books/widget.js";
+import { mergeWidget, describeChanges, serializeLibrary, sameLibrary } from "../../lib/books/library.js";
 import { processCovers } from "../../lib/books/covers.js";
 import { loadReviews } from "../../lib/books/reviews.js";
 import { cardYears, yearCard } from "../../lib/books/yearstats.js";
@@ -26,50 +31,75 @@ const log = {
   warn: (m) => console.warn(`[books] ⚠ ${m.replace(/^\[books\] /, "")}`),
 };
 
-async function fetchFeeds() {
-  if (process.env.BOOKS_FIXTURE) {
-    const { fixtureFeeds } = await import("../../test/fixtures/sample-library.js");
-    return fixtureFeeds();
+const inCI = !!process.env.GITHUB_ACTIONS;
+const annotate = (level, title, msg) => inCI && console.log(`::${level} title=${title}::${msg.replace(/\r?\n/g, " ")}`);
+
+async function fixtureLibrary() {
+  const { fixtureFeeds } = await import("../../test/fixtures/sample-library.js");
+  return { ...buildLibrary(fixtureFeeds(), config), fetchedAt: new Date(), source: "fixture", feedCounts: null };
+}
+
+/** Today's widget for every shelf. A shelf that fails is null (the merge then leaves that part alone). */
+async function fetchWidgets() {
+  const uid = config.goodreadsUserId, stamp = Date.now(), opts = { log, stamp };
+  // BOOKS_WIDGET_DIR=dir: read saved widget responses (<shelf>.js) instead of Goodreads, for sandboxes that can't reach it.
+  if (process.env.BOOKS_WIDGET_DIR) {
+    opts.fetchImpl = async (url) => {
+      const shelf = new URL(url).searchParams.get("shelf");
+      const body = await fs.readFile(path.join(process.env.BOOKS_WIDGET_DIR, `${shelf}.js`), "utf8").catch(() => null);
+      return { ok: !!body, status: body ? 200 : 404, text: async () => body };
+    };
   }
-  const uid = config.goodreadsUserId, opts = { log };
+  const soft = (p, what) => p.catch((e) => (log.warn(`${what}: ${e.message}`), null));
   const [read, reading, ...dnf] = await Promise.all([
-    fetchShelf(uid, config.readShelf, opts),
-    fetchShelf(uid, config.readingShelf, opts).catch((e) => (log.warn(`currently-reading: ${e.message}`), [])),
-    // A missing tag/shelf shouldn't sink the build; the user_shelves check in buildLibrary still catches DNFs.
-    ...config.dnfShelves.map((s) => fetchShelf(uid, s, opts).catch((e) => (log.warn(`${s}: ${e.message}`), []))),
+    fetchWidget(uid, config.readShelf, { ...opts, sort: "date_read" }),
+    soft(fetchWidget(uid, config.readingShelf, { ...opts, sort: "date_added" }), config.readingShelf),
+    ...config.dnfShelves.map((s) => soft(fetchWidget(uid, s, { ...opts, sort: "date_added" }), s)),
   ]);
-  config.dnfShelves.forEach((s, i) => log.info(`shelf "${s}": ${dnf[i].length} books`));
-  log.info(`shelf "read": ${read.length} books · "currently-reading": ${reading.length}`);
-  const feedCounts = { read: read.length, reading: reading.length, dnf: Object.fromEntries(config.dnfShelves.map((s, i) => [s, dnf[i].length])) };
-  return { read, dnf, reading, feedCounts };
+  if (!read.length) throw new Error(`the "read" widget came back empty; is the Goodreads profile still public?`);
+  const feedCounts = { read: read.length, reading: reading?.length ?? null, dnf: Object.fromEntries(config.dnfShelves.map((s, i) => [s, dnf[i]?.length ?? null])) };
+  log.info(`widget: read ${read.length} (newest 100 max) · currently-reading ${feedCounts.reading ?? "failed"} · ${config.dnfShelves.map((s, i) => `${s} ${dnf[i]?.length ?? "failed"}`).join(" · ")}`);
+  return { read, reading, dnf, feedCounts };
+}
+
+async function loadLibrary() {
+  if (process.env.BOOKS_FIXTURE) return fixtureLibrary();
+  let prev;
+  try {
+    prev = JSON.parse(await fs.readFile(config.libraryFile, "utf8"));
+  } catch (err) {
+    throw new Error(`[books] can't read ${config.libraryFile} (${err.message}). It's committed to the repo; restore it from git.`);
+  }
+  const status = { ok: false, error: null, changes: [], warnings: [], checkedAt: prev.checkedAt };
+  let library = prev, feedCounts = null;
+  try {
+    const w = await fetchWidgets();
+    feedCounts = w.feedCounts;
+    const merged = mergeWidget(prev, w);
+    const now = new Date().toISOString();
+    library = { ...merged.library, checkedAt: now };
+    status.ok = true;
+    status.checkedAt = now;
+    status.changes = describeChanges(merged.changes);
+    status.warnings = merged.warnings;
+    for (const c of status.changes) (log.info(`changed · ${c}`), annotate("notice", "Books changed", c));
+    for (const m of merged.warnings) (log.warn(m), annotate("warning", "Books", m));
+    if (!status.changes.length) log.info("no changes on Goodreads since the last build");
+    // Only touch the committed file when the books changed, so daily runs don't make empty commits.
+    if (!sameLibrary(prev, library)) await fs.writeFile(config.libraryFile, serializeLibrary(library));
+  } catch (err) {
+    status.error = err.message;
+    log.warn(`Goodreads widget failed, showing the committed library from ${prev.checkedAt}: ${err.message}`);
+    annotate("error", "Books not updated", `Goodreads widget failed; /books shows the library as of ${prev.checkedAt}. ${err.message}`);
+  }
+  const lib = { ...groupLibrary(library), fetchedAt: new Date(status.checkedAt || Date.now()), source: status.ok ? "goodreads widget" : "committed library (widget failed)", feedCounts };
+  await fs.mkdir(config.cacheDir, { recursive: true });
+  await fs.writeFile(path.join(config.cacheDir, "status.json"), JSON.stringify(status, null, 2));
+  await fs.writeFile(path.join(config.cacheDir, "snapshot.json"), serialize(lib)); // read by scripts/books-report.mjs
+  return lib;
 }
 
 const serialize = (lib) => JSON.stringify(lib, (k, v) => (v instanceof Date ? v.toISOString() : v), 0);
-const revive = (json) => JSON.parse(json, (k, v) => (["readAt", "addedAt", "when"].includes(k) && v ? new Date(v) : v));
-
-async function loadLibrary() {
-  const snapshot = path.join(config.cacheDir, "snapshot.json");
-  try {
-    const feeds = await fetchFeeds();
-    if (!feeds.read.length) throw new Error(`the "read" shelf came back empty — is the Goodreads profile public?`);
-    const lib = { ...buildLibrary(feeds, config), feedCounts: feeds.feedCounts || null };
-    await fs.mkdir(config.cacheDir, { recursive: true });
-    await fs.writeFile(snapshot, serialize({ ...lib, fetchedAt: new Date() }));
-    return { ...lib, fetchedAt: new Date(), source: process.env.BOOKS_FIXTURE ? "fixture" : "goodreads" };
-  } catch (err) {
-    log.warn(`live fetch failed: ${err.message}`);
-    try {
-      const cached = revive(await fs.readFile(snapshot, "utf8"));
-      log.warn(`using the cached snapshot from ${cached.fetchedAt.toISOString?.() ?? cached.fetchedAt}`);
-      return { ...cached, source: "cache" };
-    } catch {
-      throw new Error(
-        `[books] No Goodreads data and no cached snapshot. Check that https://www.goodreads.com/review/list_rss/${config.goodreadsUserId}?shelf=read ` +
-          `shows books in a logged-out browser (profile must be public). Original error: ${err.message}`,
-      );
-    }
-  }
-}
 
 async function decorate(lib) {
   const all = [...lib.reading, ...lib.years.flatMap((y) => y.books)];
